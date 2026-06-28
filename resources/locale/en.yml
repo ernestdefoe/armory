@@ -1,0 +1,9 @@
+ernestdefoe-armory:
+  forum:
+    nav: Armory
+
+  admin:
+    client_id: Battle.net Client ID
+    client_secret: Battle.net Client Secret
+    client_help: "Create an API client at develop.battle.net/access/clients and set its Redirect URL to https://YOUR-FORUM/auth/battlenet/callback. Then paste the id + secret here."
+    region: Default region
