@@ -1,0 +1,47 @@
+{
+  "name": "ernestdefoe/armory",
+  "description": "Armory for Flarum 2 — Battle.net sign-in + a full World of Warcraft character armory: class-colored character cards on profiles and a tabbed character page (gear with item tooltips + 3D render, stats, talents, Mythic+, raids, professions, PvP, reputations, achievements). Dependency-free Battle.net OAuth + the official Blizzard WoW API.",
+  "keywords": ["flarum", "flarum-extension", "wow", "warcraft", "battle.net", "armory"],
+  "type": "flarum-extension",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "ernestdefoe",
+      "email": "ernestdefoe@gmail.com"
+    }
+  ],
+  "homepage": "https://github.com/ernestdefoe/armory",
+  "support": {
+    "issues": "https://github.com/ernestdefoe/armory/issues",
+    "source": "https://github.com/ernestdefoe/armory"
+  },
+  "require": {
+    "php": "^8.3",
+    "flarum/core": "^2.0"
+  },
+  "autoload": {
+    "psr-4": {
+      "ErnestDefoe\\Armory\\": "src/"
+    }
+  },
+  "extra": {
+    "flarum-extension": {
+      "title": "Armory",
+      "category": "feature",
+      "icon": {
+        "name": "fab fa-battle-net",
+        "backgroundColor": "#148EFF",
+        "color": "#fff"
+      }
+    },
+    "flarum-cli": {
+      "modules": {
+        "js": true,
+        "css": true,
+        "locale": true
+      }
+    }
+  },
+  "minimum-stability": "beta",
+  "prefer-stable": true
+}
