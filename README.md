@@ -21,6 +21,7 @@ character page that looks at home in light or dark mode.
   - **PvP** — honor level and rated 2v2 / 3v3 / RBG ratings.
   - **Reputations** and **Achievements / Collections** (points, mounts, pets).
 - **Roster sidebar** to switch between your characters; pick a **main**, hide alts.
+- **Role-Play tie-in** — if [ernestdefoe/roleplay](https://github.com/ernestdefoe/roleplay) is installed, an **Add to Role-Play** button imports a WoW character as a playable Role-Play character: a combat sheet (HP + might/agility/wits/heart scaled from item level and primary stats) plus a deck of signature **class ability cards** whose damage dice scale with item level. Re-run after a gear upgrade to rescale.
 - **Theme-aware** — colors follow your forum's light/dark scheme.
 - **Caching** — character data is cached so the page stays fast and stays well
   under Blizzard's rate limits.
