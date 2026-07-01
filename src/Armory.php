@@ -3,11 +3,13 @@
 namespace ErnestDefoe\Armory;
 
 use Carbon\Carbon;
+use Flarum\Foundation\Paths;
 use Flarum\Settings\SettingsRepositoryInterface;
 use Flarum\User\User;
 use Illuminate\Contracts\Cache\Store;
 use Illuminate\Database\ConnectionInterface;
 use Illuminate\Support\Str;
+use Psr\Log\LoggerInterface;
 
 /**
  * All Armory logic: Battle.net OAuth helpers, character sync, and the data
@@ -15,19 +17,70 @@ use Illuminate\Support\Str;
  */
 class Armory
 {
-    protected BlizzardApi $api;
-
     public function __construct(
         protected SettingsRepositoryInterface $settings,
         protected ConnectionInterface $db,
+        protected BlizzardApi $api,
+        protected LoggerInterface $logger,
+        protected Paths $paths,
         protected ?Store $cache = null
     ) {
-        $this->api = new BlizzardApi($settings, $cache);
     }
 
     public function api(): BlizzardApi
     {
         return $this->api;
+    }
+
+    // ── Token encryption at rest (libsodium; key lives in a file under storage/,
+    //    outside the DB, so a DB dump alone can't decrypt linked users' tokens) ──
+
+    private function tokenKey(): ?string
+    {
+        $file = rtrim($this->paths->storage, '/\\').'/armory-token.key';
+        if (! is_file($file)) {
+            try {
+                file_put_contents($file, sodium_crypto_secretbox_keygen(), LOCK_EX);
+                @chmod($file, 0600);
+            } catch (\Throwable $e) {
+                $this->logger->warning('Armory: could not create token key file', ['error' => $e->getMessage()]);
+
+                return null;
+            }
+        }
+        $key = @file_get_contents($file);
+
+        return (is_string($key) && strlen($key) === SODIUM_CRYPTO_SECRETBOX_KEYBYTES) ? $key : null;
+    }
+
+    private function encryptToken(string $plain): string
+    {
+        $key = $this->tokenKey();
+        if ($key === null) {
+            return $plain; // never lose the token; fall back to storing as-is
+        }
+        $nonce = random_bytes(SODIUM_CRYPTO_SECRETBOX_NONCEBYTES);
+
+        return 'sb1:'.base64_encode($nonce.sodium_crypto_secretbox($plain, $nonce, $key));
+    }
+
+    private function decryptToken(?string $stored): ?string
+    {
+        if (! $stored) {
+            return null;
+        }
+        if (! str_starts_with($stored, 'sb1:')) {
+            return $stored; // legacy plaintext token (pre-encryption)
+        }
+        $key = $this->tokenKey();
+        $raw = base64_decode(substr($stored, 4), true);
+        if ($key === null || $raw === false || strlen($raw) < SODIUM_CRYPTO_SECRETBOX_NONCEBYTES) {
+            return null;
+        }
+        $nonce = substr($raw, 0, SODIUM_CRYPTO_SECRETBOX_NONCEBYTES);
+        $plain = sodium_crypto_secretbox_open(substr($raw, SODIUM_CRYPTO_SECRETBOX_NONCEBYTES), $nonce, $key);
+
+        return $plain === false ? null : $plain;
     }
 
     public function config(): array
@@ -128,7 +181,7 @@ class Armory
                 'bnet_id' => $bnetId,
                 'battletag' => $info['battletag'] ?? null,
                 'region' => $this->api->region(),
-                'access_token' => $token['access_token'],
+                'access_token' => $this->encryptToken((string) $token['access_token']),
                 'token_expires_at' => isset($token['expires_in']) ? Carbon::now()->addSeconds((int) $token['expires_in']) : null,
                 'updated_at' => Carbon::now(),
                 'created_at' => Carbon::now(),
@@ -137,6 +190,10 @@ class Armory
         try {
             $this->sync($userId);
         } catch (\Throwable $e) {
+            $this->logger->warning('Armory: character sync failed after linking', [
+                'user_id' => $userId,
+                'error' => $e->getMessage(),
+            ]);
         }
 
         return true;
@@ -207,11 +264,12 @@ class Armory
     public function sync(int $userId): array
     {
         $acct = $this->db->table('armory_battlenet_accounts')->where('user_id', $userId)->first();
-        if (! $acct || ! $acct->access_token) {
+        $accessToken = $this->decryptToken($acct->access_token ?? null);
+        if (! $acct || ! $accessToken) {
             return ['ok' => false, 'reason' => 'not_linked'];
         }
         $region = $acct->region ?: $this->api->region();
-        $profile = $this->api->accountProfile($acct->access_token, $region);
+        $profile = $this->api->accountProfile($accessToken, $region);
         if (! $profile) {
             return ['ok' => false, 'reason' => 'profile_unavailable'];
         }

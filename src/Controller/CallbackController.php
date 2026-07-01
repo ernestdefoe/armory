@@ -11,12 +11,14 @@ use Laminas\Diactoros\Response\RedirectResponse;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
+use Psr\Log\LoggerInterface;
 
 class CallbackController implements RequestHandlerInterface
 {
     public function __construct(
         protected Armory $armory,
-        protected ResponseFactory $response
+        protected ResponseFactory $response,
+        protected LoggerInterface $logger
     ) {
     }
 
@@ -70,6 +72,10 @@ class CallbackController implements RequestHandlerInterface
             try {
                 $this->armory->storeLink((int) $existing->user_id, $token, is_array($info) ? $info : []);
             } catch (\Throwable $e) {
+                $this->logger->warning('Armory: re-link on social login failed', [
+                    'user_id' => (int) $existing->user_id,
+                    'error' => $e->getMessage(),
+                ]);
             }
         }
 
