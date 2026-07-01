@@ -656,6 +656,12 @@ class Armory
 
     public function rpInstalled(): bool
     {
+        // Tables alone aren't proof — a failed/removed install leaves them
+        // behind. The extension must actually be enabled.
+        if (! resolve(\Flarum\Extension\ExtensionManager::class)->isEnabled('ernestdefoe-roleplay')) {
+            return false;
+        }
+
         $s = $this->db->getSchemaBuilder();
 
         return $s->hasTable('rp_cards') && $s->hasTable('rp_sheets') && $s->hasTable('rp_characters');
@@ -785,6 +791,10 @@ class Armory
 
     public function arenaInstalled(): bool
     {
+        if (! resolve(\Flarum\Extension\ExtensionManager::class)->isEnabled('forumaker-arena')) {
+            return false;
+        }
+
         $s = $this->db->getSchemaBuilder();
 
         return $s->hasTable('arena_cards') && $s->hasTable('arena_decks') && $s->hasTable('arena_stats');
