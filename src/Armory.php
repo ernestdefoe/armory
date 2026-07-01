@@ -787,14 +787,15 @@ class Armory
             return (int) $existing;
         }
 
+        // NB: Arena's ArenaCard model has timestamps disabled and stores created_at
+        // as NULL — its GetCardsController does `created_at?->toIso8601String()`,
+        // which fatals on a non-null string. So we leave the timestamps NULL too.
         return (int) $this->db->table('arena_cards')->insertGetId(array_merge([
             'name' => $name,
             'description' => null,
             'image_url' => null,
             'order' => 900,
             'is_active' => true,
-            'created_at' => $now,
-            'updated_at' => $now,
         ], $attrs));
     }
 

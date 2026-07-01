@@ -1,9 +1,7 @@
 import app from 'flarum/forum/app';
 import { extend } from 'flarum/common/extend';
 import LinkButton from 'flarum/common/components/LinkButton';
-import IndexPage from 'flarum/forum/components/IndexPage';
-import HeaderPrimary from 'flarum/forum/components/HeaderPrimary';
-import SessionDropdown from 'flarum/forum/components/SessionDropdown';
+import IndexSidebar from 'flarum/forum/components/IndexSidebar';
 import LogInButtons from 'flarum/forum/components/LogInButtons';
 import LogInButton from 'flarum/forum/components/LogInButton';
 import CommentPost from 'flarum/forum/components/CommentPost';
@@ -18,14 +16,10 @@ app.initializers.add('ernestdefoe-armory', () => {
 
   const trans = (k: string) => app.translator.trans('ernestdefoe-armory.forum.' + k);
 
-  // A persistent Armory link in the header — visible to everyone (guests included)
-  // on every page, so nobody has to type /armory by hand.
-  extend(HeaderPrimary.prototype, 'items', (items: any) => {
-    items.add(
-      'armory',
-      LinkButton.component({ icon: 'fab fa-battle-net', href: app.route('armory'), className: 'Button Button--link' }, trans('nav')),
-      5
-    );
+  // Links in the main forum navigation (the index sidebar), where nav links live.
+  // In Flarum 2 the sidebar nav is IndexSidebar (NOT IndexPage.navItems).
+  extend(IndexSidebar.prototype, 'navItems', (items: any) => {
+    items.add('armory', LinkButton.component({ icon: 'fab fa-battle-net', href: app.route('armory') }, trans('nav')), -10);
 
     // An Arena link too, when the Arena extension (forumaker/arena) is installed.
     // Arena's page is per-user (their deck builder), so only for signed-in members.
@@ -33,24 +27,10 @@ app.initializers.add('ernestdefoe-armory', () => {
     if (user && app.routes['user.arena']) {
       items.add(
         'arena',
-        LinkButton.component(
-          { icon: 'fas fa-dungeon', href: app.route('user.arena', { username: user.username() }), className: 'Button Button--link' },
-          trans('arena')
-        ),
-        4
+        LinkButton.component({ icon: 'fas fa-dungeon', href: app.route('user.arena', { username: user.username() }) }, trans('arena')),
+        -11
       );
     }
-  });
-
-  // …and in the index sidebar navigation.
-  extend(IndexPage.prototype, 'navItems', (items: any) => {
-    items.add('armory', LinkButton.component({ icon: 'fab fa-battle-net', href: app.route('armory') }, trans('nav')), -10);
-  });
-
-  // …and in the session (avatar) dropdown, so it's reachable from every page when signed in.
-  extend(SessionDropdown.prototype, 'items', (items: any) => {
-    if (!app.session.user) return;
-    items.add('armory', LinkButton.component({ icon: 'fab fa-battle-net', href: app.route('armory') }, trans('nav')), 80);
   });
 
   // "Sign in with Battle.net" social-login button on the log-in / sign-up modals.
