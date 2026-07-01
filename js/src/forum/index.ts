@@ -47,14 +47,26 @@ app.initializers.add('ernestdefoe-armory', () => {
     );
   });
 
-  // The author's character pane in each post's side column (below the avatar).
-  // Data rides in on the serialized user (`armoryMain`) — zero extra requests.
-  extend(CommentPost.prototype, 'sideItems', function (this: any, items: any) {
-    const user = this.attrs.post?.user?.();
+  // The author's character pane in each post's side column. It REPLACES the
+  // avatar there (the render is the identity); group badges move up beside
+  // the username via the Post--armory-pane class + CSS. Data rides in on the
+  // serialized user (`armoryMain`) — zero extra requests.
+  const paneMain = (post: any) => {
+    const user = post?.user?.();
     const main = user && typeof user.attribute === 'function' ? user.attribute('armoryMain') : null;
-    if (main && main.name) {
+    return main && main.name ? main : null;
+  };
+
+  extend(CommentPost.prototype, 'sideItems', function (this: any, items: any) {
+    const main = paneMain(this.attrs.post);
+    if (main) {
       items.add('armory', ArmoryPostPane.component({ main }), 90);
+      if (items.has('avatar')) items.remove('avatar');
     }
+  });
+
+  extend(CommentPost.prototype, 'classes', function (this: any, classes: string[]) {
+    if (paneMain(this.attrs.post)) classes.push('Post--armory-pane');
   });
 
   // Enhance [item=…] links in posts with the item name/quality/icon + a tooltip.

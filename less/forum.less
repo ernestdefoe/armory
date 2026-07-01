@@ -156,14 +156,32 @@
 // plain avatar (the pane hides below the tablet breakpoint).
 @media @tablet-up {
   .Post:has(.ArmoryPostPane) {
-    --avatar-column-width: 170px;
+    --avatar-column-width: 186px;
+  }
+
+  // The pane replaces the side avatar; group badges re-flow from their
+  // avatar-overlay position to sit inline beside the username.
+  .Post--armory-pane {
+    .PostUser > h3 {
+      display: inline-block;
+    }
+
+    .PostUser-badges {
+      float: none;
+      position: static;
+      display: inline-flex;
+      gap: 4px;
+      width: auto;
+      margin: 0 0 0 7px;
+      vertical-align: -4px;
+    }
   }
 }
 
 .ArmoryPostPane {
   display: none;
-  margin-top: 12px;
-  width: 148px;
+  margin-top: 4px;
+  width: 166px;
   text-align: center;
   font-size: 12px;
   line-height: 1.45;
@@ -185,12 +203,21 @@
   img {
     display: block;
     width: 100%;
-    height: 170px;
+    height: 220px;
     object-fit: cover;
-    object-position: center 18%;
+    object-position: 50% 50%;
+
+    // main-raw renders are 1600x1200 with the character standing in the
+    // middle fifth (center ~49%,56%, spanning y 30-81%). Cover fits the
+    // full height, so zoom around the character's center until the figure
+    // fills the frame instead of floating in empty canvas.
+    &.is-render {
+      transform: scale(1.7);
+      transform-origin: 49% 56%;
+    }
 
     &.is-avatar {
-      height: 148px;
+      height: 166px;
       object-fit: contain;
       padding: 18px;
     }
