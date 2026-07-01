@@ -720,13 +720,36 @@ class Armory
         }
 
         $sets = $this->arenaClassCards((string) $c->class);
+        $fill = $this->arenaFillerCards();
         $now = Carbon::now();
         $cardIds = [];
+
+        // A full Arena deck is exactly 20 cards (≤10 elemental + ≤10 bonus) — that's
+        // what CreateBattleController requires to start a challenge. Combine the
+        // class's signature cards with shared filler and cap each type at 10.
+        $cap = function (array $primary, array $filler, int $n): array {
+            $out = [];
+            $seen = [];
+            foreach (array_merge($primary, $filler) as $card) {
+                if (isset($seen[$card[0]])) {
+                    continue;
+                }
+                $seen[$card[0]] = true;
+                $out[] = $card;
+                if (count($out) >= $n) {
+                    break;
+                }
+            }
+
+            return $out;
+        };
+        $elemental = $cap($sets['elemental'], $fill['elemental'], 10);
+        $bonusCards = $cap($sets['bonus'], $fill['bonus'], 10);
 
         // Attack/defense derived from cost tier for consistent balance.
         $tier = [1 => [2, 2], 2 => [4, 3], 3 => [6, 4]];
 
-        foreach ($sets['elemental'] as $card) {
+        foreach ($elemental as $card) {
             [$name, $element, $cost] = $card;
             $cardIds[] = $this->ensureArenaCard($name, [
                 'element' => $element,
@@ -736,7 +759,7 @@ class Armory
                 'cost' => $cost,
             ], $now);
         }
-        foreach ($sets['bonus'] as $card) {
+        foreach ($bonusCards as $card) {
             [$name, $effect, $value] = $card;
             $cardIds[] = $this->ensureArenaCard($name, [
                 'element' => 'fire', // ignored for bonus cards; column is NOT NULL-safe default
@@ -821,6 +844,22 @@ class Armory
         return $sets[$class] ?? [
             'elemental' => [['Strike', 'earth', 1], ['Heavy Blow', 'earth', 2], ['Cleave', 'wind', 2], ['Crushing Blow', 'earth', 3], ['Quick Jab', 'wind', 1], ['Finisher', 'fire', 3]],
             'bonus' => [['Second Wind', 'heal', 3], ['Brace', 'shield', 3], ['Rally', 'power_surge', 2], ['Cripple', 'weaken', 2]],
+        ];
+    }
+
+    /** Shared filler cards that top a class's signature cards up to a full 20-card deck (10 elemental + 10 bonus). */
+    private function arenaFillerCards(): array
+    {
+        return [
+            'elemental' => [
+                ['Ember', 'fire', 1], ['Gust', 'wind', 2], ['Tremor', 'earth', 2],
+                ['Tidal Wave', 'water', 3], ['Spark', 'lightning', 1], ['Boulder', 'earth', 3],
+            ],
+            'bonus' => [
+                ['Empower', 'amplify', 2], ['Overcharge', 'overload', 2], ['Attunement', 'resonance', 2],
+                ['Blood Offering', 'sacrifice', 2], ['Siphon', 'mana_steal', 2], ['Mirror Ward', 'reflect', 2],
+                ['Renewal', 'regeneration', 2], ['Cleanse', 'debuff_remove', 0],
+            ],
         ];
     }
 }
