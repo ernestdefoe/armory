@@ -181,15 +181,55 @@ class BlizzardApi
         return $this->profileGet($r, $rs, $n, '/collections/pets');
     }
 
-    /** Resolve + cache an equipped item's icon URL (icons are static → cache long). */
+    /**
+     * Resolve + cache an equipped item's icon URL. Resolves by item id against
+     * the generic `static-{region}` namespace via {@see itemMediaIcon()} rather
+     * than the media href embedded in the equipment payload: that href carries a
+     * *versioned* namespace (e.g. static-12.0.1_65617-us) that 404s once Blizzard
+     * ships a newer game build, so it only worked for very recently-updated gear.
+     */
     public function itemIcon(array $item): ?string
     {
-        $href = $item['media']['key']['href'] ?? null;
-        $id = $item['media']['id'] ?? ($item['item']['id'] ?? null);
-        if (! $href || ! $id) {
+        $id = (int) ($item['media']['id'] ?? ($item['item']['id'] ?? 0));
+        if ($id <= 0) {
             return null;
         }
-        $ck = 'armory.icon.'.$id;
+
+        return $this->itemMediaIcon($id);
+    }
+
+    public function mediaUrl(array $media, string $key = 'avatar'): ?string
+    {
+        foreach ($media['assets'] ?? [] as $a) {
+            if (($a['key'] ?? null) === $key) {
+                return $a['value'] ?? null;
+            }
+        }
+
+        return $media['avatar_url'] ?? null;
+    }
+
+    // ── Game Data: standalone items (for [item=…] post links) ───────────────
+
+    /** A single item's static game data (name, quality, preview_item tooltip). */
+    public function item(int $id, ?string $region = null): ?array
+    {
+        $region = in_array($region, self::REGIONS, true) ? $region : $this->region();
+        $token = $this->clientToken();
+        if (! $token) {
+            return null;
+        }
+
+        return $this->getJson($this->apiHost($region).'/data/wow/item/'.$id, $token, [
+            'namespace' => "static-{$region}", 'locale' => 'en_US',
+        ]);
+    }
+
+    /** Resolve + cache a standalone item's icon URL (static → cache long). */
+    public function itemMediaIcon(int $id, ?string $region = null): ?string
+    {
+        $region = in_array($region, self::REGIONS, true) ? $region : $this->region();
+        $ck = 'armory.icon.item.'.$id;
         $cached = $this->cache?->get($ck);
         if (is_string($cached)) {
             return $cached;
@@ -198,7 +238,7 @@ class BlizzardApi
         if (! $token) {
             return null;
         }
-        $data = $this->getJson($href, $token);
+        $data = $this->getJson($this->apiHost($region).'/data/wow/media/item/'.$id, $token, ['namespace' => "static-{$region}"]);
         $url = null;
         foreach ($data['assets'] ?? [] as $a) {
             if (($a['key'] ?? '') === 'icon') {
@@ -213,15 +253,38 @@ class BlizzardApi
         return $url;
     }
 
-    public function mediaUrl(array $media, string $key = 'avatar'): ?string
+    /** Search items by name for the composer picker. Returns [{id, name, quality}]. */
+    public function searchItems(string $q, ?string $region = null): array
     {
-        foreach ($media['assets'] ?? [] as $a) {
-            if (($a['key'] ?? null) === $key) {
-                return $a['value'] ?? null;
+        $q = trim($q);
+        $region = in_array($region, self::REGIONS, true) ? $region : $this->region();
+        $token = $this->clientToken();
+        if (! $token || $q === '') {
+            return [];
+        }
+        $data = $this->getJson($this->apiHost($region).'/data/wow/search/item', $token, [
+            'namespace' => "static-{$region}",
+            'name.en_US' => $q,
+            'orderby' => 'id',
+            '_pageSize' => 20,
+            '_page' => 1,
+        ]);
+        $out = [];
+        foreach ($data['results'] ?? [] as $r) {
+            $d = $r['data'] ?? [];
+            $id = $d['id'] ?? null;
+            if (! $id) {
+                continue;
             }
+            $out[] = [
+                'id' => (int) $id,
+                'name' => is_array($d['name'] ?? null) ? ($d['name']['en_US'] ?? '') : (string) ($d['name'] ?? ''),
+                'quality' => $d['quality']['type'] ?? '',
+                'level' => $d['level'] ?? null,
+            ];
         }
 
-        return $media['avatar_url'] ?? null;
+        return $out;
     }
 
     private function profileGet(string $region, string $rs, string $name, string $suffix): ?array
@@ -238,10 +301,14 @@ class BlizzardApi
     private function getJson(string $url, string $token, array $query = []): ?array
     {
         try {
-            $r = $this->http->get($url, [
-                'headers' => ['Authorization' => 'Bearer '.$token, 'Accept' => 'application/json'],
-                'query' => $query,
-            ]);
+            $options = ['headers' => ['Authorization' => 'Bearer '.$token, 'Accept' => 'application/json']];
+            // Guzzle's `query` option REPLACES the URL's existing query string, so
+            // only set it when we actually have params — otherwise a URL that already
+            // carries its namespace (e.g. item media hrefs) would have it stripped.
+            if ($query) {
+                $options['query'] = $query;
+            }
+            $r = $this->http->get($url, $options);
 
             return $this->body($r);
         } catch (\Throwable $e) {

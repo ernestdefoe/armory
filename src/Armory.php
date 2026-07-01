@@ -35,29 +35,50 @@ class Armory
         return ['configured' => $this->api->configured(), 'region' => $this->api->region()];
     }
 
-    // ── OAuth (link-only: the member must already be signed in) ─────────────
+    // ── OAuth (two modes: 'login' = social sign-in, 'link' = connect armory) ──
 
-    /** A signed, stateless OAuth state token (no session dependency). */
-    public function signState(): string
+    /**
+     * A signed, stateless OAuth state token (no session dependency). Carries the
+     * flow mode ('login' for social sign-in, 'link' for connecting Battle.net to
+     * an already-signed-in member) and a same-origin return path.
+     */
+    public function signState(string $mode = 'link', string $returnTo = '/'): string
     {
-        $payload = base64_encode(json_encode(['n' => bin2hex(random_bytes(8)), 't' => time()]));
+        $payload = base64_encode(json_encode([
+            'n' => bin2hex(random_bytes(8)),
+            't' => time(),
+            'm' => $mode === 'login' ? 'login' : 'link',
+            'r' => $returnTo,
+        ]));
 
         return $payload.'.'.hash_hmac('sha256', $payload, $this->stateSecret());
     }
 
-    public function verifyState(string $state): bool
+    /** Verify + decode a state token. Returns ['mode', 'returnTo'] or null if invalid/expired. */
+    public function readState(string $state): ?array
     {
         $parts = explode('.', $state, 2);
         if (count($parts) !== 2) {
-            return false;
+            return null;
         }
         [$payload, $sig] = $parts;
         if (! hash_equals(hash_hmac('sha256', $payload, $this->stateSecret()), $sig)) {
-            return false;
+            return null;
         }
         $data = json_decode((string) base64_decode($payload), true);
+        if (! is_array($data) || ! isset($data['t']) || (time() - (int) $data['t']) >= 600) {
+            return null;
+        }
 
-        return is_array($data) && isset($data['t']) && (time() - (int) $data['t']) < 600;
+        return [
+            'mode' => ($data['m'] ?? 'link') === 'login' ? 'login' : 'link',
+            'returnTo' => is_string($data['r'] ?? null) ? $data['r'] : '/',
+        ];
+    }
+
+    public function verifyState(string $state): bool
+    {
+        return $this->readState($state) !== null;
     }
 
     private function stateSecret(): string
@@ -79,6 +100,20 @@ class Armory
             return false;
         }
         $info = $this->api->userInfo($token['access_token']);
+
+        return $this->storeLink($userId, $token, is_array($info) ? $info : []);
+    }
+
+    /**
+     * Persist an already-exchanged Battle.net token + userinfo against a forum
+     * user and sync their characters. Shared by the "connect" flow and by social
+     * sign-in (which has already exchanged the code to authenticate the member).
+     */
+    public function storeLink(int $userId, array $token, array $info): bool
+    {
+        if (! ($token['access_token'] ?? null)) {
+            return false;
+        }
         $bnetId = (string) ($info['sub'] ?? $info['id'] ?? '');
         if ($bnetId === '') {
             return false;
@@ -262,6 +297,61 @@ class Armory
         $this->cache?->put($key, $data, 600);
 
         return $data;
+    }
+
+    /**
+     * A normalized tooltip payload for a standalone item (for [item=…] post
+     * links). Shaped like the equipment items so the frontend tooltip renderer
+     * (buildTip) is shared. Static game data → cached a week.
+     */
+    public function itemCard(int $id): array
+    {
+        if ($id <= 0 || ! $this->api->configured()) {
+            return ['ok' => false];
+        }
+        $region = $this->api->region();
+        $key = 'armory.itemcard.'.$region.'.'.$id;
+        if ($this->cache && ($hit = $this->cache->get($key))) {
+            return $hit;
+        }
+        $data = $this->api->item($id, $region);
+        if (! $data) {
+            return ['ok' => false];
+        }
+        $p = $data['preview_item'] ?? $data;
+        $card = [
+            'ok' => true,
+            'id' => $id,
+            'name' => is_array($p['name'] ?? null) ? ($p['name']['en_US'] ?? '') : (string) ($p['name'] ?? ($data['name'] ?? 'Item #'.$id)),
+            'quality' => $p['quality']['type'] ?? ($data['quality']['type'] ?? ''),
+            'icon' => $this->api->itemMediaIcon($id, $region),
+            'ilvlStr' => $p['level']['display_string'] ?? null,
+            'nameDesc' => $p['name_description']['display_string'] ?? null,
+            'binding' => $p['binding']['name'] ?? null,
+            'invtype' => $p['inventory_type']['name'] ?? null,
+            'type' => $p['item_subclass']['name'] ?? null,
+            'armor' => $p['armor']['display']['display_string'] ?? null,
+            'wep' => array_values(array_filter([
+                $p['weapon']['damage']['display_string'] ?? null,
+                $p['weapon']['attack_speed']['display_string'] ?? null,
+                $p['weapon']['dps']['display_string'] ?? null,
+            ])),
+            'stats' => array_values(array_filter(array_map(fn ($s) => $s['display']['display_string'] ?? '', $p['stats'] ?? []))),
+            'durability' => $p['durability']['display_string'] ?? null,
+            'requires' => $p['requirements']['level']['display_string'] ?? null,
+            'classes' => $p['requirements']['playable_classes']['display_string'] ?? null,
+            'effects' => array_values(array_filter(array_map(fn ($sp) => $sp['description'] ?? '', $p['spells'] ?? []))),
+            'sell' => $p['sell_price']['display_strings'] ?? null,
+        ];
+        $this->cache?->put($key, $card, 604800);
+
+        return $card;
+    }
+
+    /** Search items by name for the composer picker. */
+    public function searchItems(string $q): array
+    {
+        return $this->api->searchItems($q);
     }
 
     public function extra(int $id, string $kind): array

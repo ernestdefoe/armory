@@ -1,6 +1,13 @@
 ernestdefoe-armory:
   forum:
     nav: Armory
+    log_in_with_battlenet: Sign in with Battle.net
+    item_link_button: Link a WoW item
+    item_search:
+      title: Link a WoW item
+      placeholder: Search items by name…
+      hint: Type an item name to search.
+      none: No items found.
 
   admin:
     client_id: Battle.net Client ID
