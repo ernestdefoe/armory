@@ -4,18 +4,16 @@
  * fetched lazily from the extension's public item API and cached in memory.
  */
 
+import app from 'flarum/forum/app';
 import { QUAL, esc, buildTip, showTip, positionTip, hideTip } from './tooltip';
 
 const cache: Record<string, Promise<any>> = {};
 
 function fetchItem(id: string): Promise<any> {
   if (!cache[id]) {
-    cache[id] = fetch('/api/armory/item/' + encodeURIComponent(id), {
-      headers: { Accept: 'application/json' },
-      credentials: 'same-origin',
-    })
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d) => (d && d.ok ? d : null))
+    cache[id] = app
+      .request<any>({ method: 'GET', url: app.forum.attribute('apiUrl') + '/armory/item/' + encodeURIComponent(id) })
+      .then((d: any) => (d && d.ok ? d : null))
       .catch(() => null);
   }
   return cache[id];

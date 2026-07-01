@@ -3,10 +3,12 @@
 namespace ErnestDefoe\Armory;
 
 use Carbon\Carbon;
+use ErnestDefoe\Armory\Job\SyncCharactersJob;
 use Flarum\Foundation\Paths;
 use Flarum\Settings\SettingsRepositoryInterface;
 use Flarum\User\User;
 use Illuminate\Contracts\Cache\Store;
+use Illuminate\Contracts\Queue\Queue;
 use Illuminate\Database\ConnectionInterface;
 use Illuminate\Support\Str;
 use Psr\Log\LoggerInterface;
@@ -23,6 +25,7 @@ class Armory
         protected BlizzardApi $api,
         protected LoggerInterface $logger,
         protected Paths $paths,
+        protected Queue $queue,
         protected ?Store $cache = null
     ) {
     }
@@ -171,11 +174,11 @@ class Armory
         if ($bnetId === '') {
             return false;
         }
-        $owner = $this->db->table('armory_battlenet_accounts')->where('bnet_id', $bnetId)->first();
+        $owner = ArmoryBattlenetAccount::query()->where('bnet_id', $bnetId)->first();
         if ($owner && (int) $owner->user_id !== $userId) {
             return false; // linked to someone else
         }
-        $this->db->table('armory_battlenet_accounts')->updateOrInsert(
+        ArmoryBattlenetAccount::query()->updateOrCreate(
             ['user_id' => $userId],
             [
                 'bnet_id' => $bnetId,
@@ -183,18 +186,11 @@ class Armory
                 'region' => $this->api->region(),
                 'access_token' => $this->encryptToken((string) $token['access_token']),
                 'token_expires_at' => isset($token['expires_in']) ? Carbon::now()->addSeconds((int) $token['expires_in']) : null,
-                'updated_at' => Carbon::now(),
-                'created_at' => Carbon::now(),
             ]
         );
-        try {
-            $this->sync($userId);
-        } catch (\Throwable $e) {
-            $this->logger->warning('Armory: character sync failed after linking', [
-                'user_id' => $userId,
-                'error' => $e->getMessage(),
-            ]);
-        }
+        // Character enrichment makes ~60 sequential Blizzard calls — run it off the
+        // request cycle so it never blocks the OAuth callback / login redirect.
+        $this->queue->push(new SyncCharactersJob($userId));
 
         return true;
     }
@@ -203,14 +199,14 @@ class Armory
 
     public function me(User $user): array
     {
-        $acct = $this->db->table('armory_battlenet_accounts')->where('user_id', $user->id)->first();
+        $acct = ArmoryBattlenetAccount::query()->where('user_id', $user->id)->first();
 
         return [
             'configured' => $this->api->configured(),
             'connected' => (bool) $acct,
             'battletag' => $acct->battletag ?? null,
             'region' => $acct->region ?? $this->api->region(),
-            'synced_at' => $acct->synced_at ?? null,
+            'synced_at' => optional($acct)->synced_at?->toIso8601String(),
             'rp_installed' => $this->rpInstalled(),
             'arena_installed' => $this->arenaInstalled(),
             'characters' => $this->characters((int) $user->id),
@@ -219,51 +215,54 @@ class Armory
 
     public function characters(int $userId): array
     {
-        return $this->db->table('armory_characters')->where('user_id', $userId)
-            ->orderByDesc('is_main')->orderByDesc('item_level')->orderByDesc('level')
-            ->get()->map(fn ($c) => (array) $c)->all();
+        return $this->charactersQuery($userId)->get()->map->toArray()->all();
     }
 
     public function visibleCharacters(int $userId): array
     {
-        return $this->db->table('armory_characters')->where('user_id', $userId)->where('is_visible', true)
-            ->orderByDesc('is_main')->orderByDesc('item_level')->orderByDesc('level')
-            ->get()->map(fn ($c) => (array) $c)->all();
+        return $this->charactersQuery($userId)->where('is_visible', true)->get()->map->toArray()->all();
+    }
+
+    private function charactersQuery(int $userId)
+    {
+        return ArmoryCharacter::query()->where('user_id', $userId)
+            ->orderByDesc('is_main')->orderByDesc('item_level')->orderByDesc('level');
     }
 
     public function setMain(int $userId, int $charId): bool
     {
-        if (! $this->db->table('armory_characters')->where('id', $charId)->where('user_id', $userId)->exists()) {
+        if (! ArmoryCharacter::query()->where('id', $charId)->where('user_id', $userId)->exists()) {
             return false;
         }
-        $this->db->table('armory_characters')->where('user_id', $userId)->update(['is_main' => false]);
-        $this->db->table('armory_characters')->where('id', $charId)->update(['is_main' => true, 'is_visible' => true]);
+        ArmoryCharacter::query()->where('user_id', $userId)->update(['is_main' => false]);
+        ArmoryCharacter::query()->where('id', $charId)->update(['is_main' => true, 'is_visible' => true]);
 
         return true;
     }
 
     public function setVisible(int $userId, int $charId): bool
     {
-        $row = $this->db->table('armory_characters')->where('id', $charId)->where('user_id', $userId)->first();
-        if (! $row) {
+        $character = ArmoryCharacter::query()->where('id', $charId)->where('user_id', $userId)->first();
+        if (! $character) {
             return false;
         }
-        $this->db->table('armory_characters')->where('id', $charId)->update(['is_visible' => ! $row->is_visible]);
+        $character->is_visible = ! $character->is_visible;
+        $character->save();
 
         return true;
     }
 
     public function disconnect(int $userId): void
     {
-        $this->db->table('armory_characters')->where('user_id', $userId)->delete();
-        $this->db->table('armory_battlenet_accounts')->where('user_id', $userId)->delete();
+        ArmoryCharacter::query()->where('user_id', $userId)->delete();
+        ArmoryBattlenetAccount::query()->where('user_id', $userId)->delete();
     }
 
     // ── Sync ─────────────────────────────────────────────────────────────
 
     public function sync(int $userId): array
     {
-        $acct = $this->db->table('armory_battlenet_accounts')->where('user_id', $userId)->first();
+        $acct = ArmoryBattlenetAccount::query()->where('user_id', $userId)->first();
         $accessToken = $this->decryptToken($acct->access_token ?? null);
         if (! $acct || ! $accessToken) {
             return ['ok' => false, 'reason' => 'not_linked'];
@@ -283,7 +282,7 @@ class Armory
                     continue;
                 }
                 $found++;
-                $this->db->table('armory_characters')->updateOrInsert(
+                ArmoryCharacter::query()->updateOrCreate(
                     ['region' => $region, 'realm_slug' => $realmSlug, 'name' => $name],
                     [
                         'user_id' => $userId,
@@ -292,18 +291,17 @@ class Armory
                         'class' => $c['playable_class']['name'] ?? null,
                         'race' => $c['playable_race']['name'] ?? null,
                         'faction' => $c['faction']['type'] ?? ($c['faction']['name'] ?? null),
-                        'updated_at' => Carbon::now(),
                     ]
                 );
             }
         }
 
-        $rows = $this->db->table('armory_characters')->where('user_id', $userId)->where('region', $region)
+        $rows = ArmoryCharacter::query()->where('user_id', $userId)->where('region', $region)
             ->orderByDesc('level')->limit(30)->get();
         foreach ($rows as $row) {
             $detail = $this->api->character($region, $row->realm_slug, $row->name);
             $media = $this->api->characterMedia($region, $row->realm_slug, $row->name);
-            $update = ['synced_at' => Carbon::now(), 'updated_at' => Carbon::now()];
+            $update = ['synced_at' => Carbon::now()];
             if ($detail) {
                 $update['item_level'] = $detail['equipped_item_level'] ?? $detail['average_item_level'] ?? $row->item_level;
                 $update['guild'] = $detail['guild']['name'] ?? $row->guild;
@@ -314,16 +312,16 @@ class Armory
                 $update['avatar_url'] = $this->api->mediaUrl($media, 'avatar') ?? $row->avatar_url;
                 $update['render_url'] = $this->api->mediaUrl($media, 'main-raw') ?? $this->api->mediaUrl($media, 'main') ?? $row->render_url;
             }
-            $this->db->table('armory_characters')->where('id', $row->id)->update($update);
+            $row->update($update);
         }
 
-        if (! $this->db->table('armory_characters')->where('user_id', $userId)->where('is_main', true)->exists()) {
-            $top = $this->db->table('armory_characters')->where('user_id', $userId)->orderByDesc('item_level')->orderByDesc('level')->first();
+        if (! ArmoryCharacter::query()->where('user_id', $userId)->where('is_main', true)->exists()) {
+            $top = ArmoryCharacter::query()->where('user_id', $userId)->orderByDesc('item_level')->orderByDesc('level')->first();
             if ($top) {
-                $this->db->table('armory_characters')->where('id', $top->id)->update(['is_main' => true]);
+                $top->update(['is_main' => true]);
             }
         }
-        $this->db->table('armory_battlenet_accounts')->where('user_id', $userId)->update(['synced_at' => Carbon::now(), 'updated_at' => Carbon::now()]);
+        $acct->update(['synced_at' => Carbon::now()]);
 
         return ['ok' => true, 'found' => $found];
     }
@@ -332,7 +330,7 @@ class Armory
 
     public function full(int $id): array
     {
-        $c = $this->db->table('armory_characters')->where('id', $id)->where('is_visible', true)->first();
+        $c = ArmoryCharacter::query()->where('id', $id)->where('is_visible', true)->first();
         if (! $c) {
             return ['ok' => false];
         }
@@ -345,7 +343,7 @@ class Armory
         $n = $c->name;
         $data = [
             'ok' => true,
-            'character' => (array) $c,
+            'character' => $c->toArray(),
             'equipment' => $this->equipmentBlock($r, $rs, $n),
             'stats' => $this->statBlock($r, $rs, $n),
             'talents' => $this->talentBlock($r, $rs, $n),
@@ -415,7 +413,7 @@ class Armory
 
     public function extra(int $id, string $kind): array
     {
-        $c = $this->db->table('armory_characters')->where('id', $id)->where('is_visible', true)->first();
+        $c = ArmoryCharacter::query()->where('id', $id)->where('is_visible', true)->first();
         if (! $c || ! in_array($kind, ['pvp', 'reputations', 'achievements'], true)) {
             return ['ok' => false];
         }
@@ -643,7 +641,7 @@ class Armory
         if (! $this->rpInstalled()) {
             return ['ok' => false, 'error' => 'Role-Play is not installed on this forum.'];
         }
-        $c = $this->db->table('armory_characters')->where('id', $id)->where('user_id', $userId)->first();
+        $c = ArmoryCharacter::query()->where('id', $id)->where('user_id', $userId)->first();
         if (! $c) {
             return ['ok' => false, 'error' => 'Character not found.'];
         }
@@ -772,7 +770,7 @@ class Armory
         if (! $this->arenaInstalled()) {
             return ['ok' => false, 'error' => 'Arena is not installed on this forum.'];
         }
-        $c = $this->db->table('armory_characters')->where('id', $id)->where('user_id', $userId)->first();
+        $c = ArmoryCharacter::query()->where('id', $id)->where('user_id', $userId)->first();
         if (! $c) {
             return ['ok' => false, 'error' => 'Character not found.'];
         }

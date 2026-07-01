@@ -74,12 +74,9 @@ export default class ItemSearchModal extends Modal {
     }
     this.loading = true;
     m.redraw();
-    fetch('/api/armory/item-search?q=' + encodeURIComponent(q), {
-      headers: { Accept: 'application/json' },
-      credentials: 'same-origin',
-    })
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d) => {
+    app
+      .request<any>({ method: 'GET', url: app.forum.attribute('apiUrl') + '/armory/item-search?q=' + encodeURIComponent(q) })
+      .then((d: any) => {
         this.results = (d && d.results) || [];
         this.loading = false;
         m.redraw();
