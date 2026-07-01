@@ -9,9 +9,22 @@ ernestdefoe-armory:
       placeholder: Search items by name…
       hint: Type an item name to search.
       none: No items found.
+    pane_level_ilvl: "Level {level} · {ilvl} ilvl"
+    guild_button: Guild roster
+    guild_back: Your characters
+    guild_title: "{guild} — guild roster"
+    guild_members: "{count} members"
+    guild_rank_master: Guild master
+    guild_rank: "Rank {rank}"
+    guild_level_short: "Level {level}"
+    guild_unavailable: The guild roster is not available yet. An admin can set the guild realm and name in the Armory settings.
+    guild_loading: Summoning the roster…
 
   admin:
     client_id: Battle.net Client ID
     client_secret: Battle.net Client Secret
     client_help: "Create an API client at develop.battle.net/access/clients and set its Redirect URL to https://YOUR-FORUM/auth/battlenet/callback. Then paste the id + secret here."
     region: Default region
+    guild_realm: Guild realm
+    guild_name: Guild name
+    guild_help: "Set your guild's realm and exact in-game name to enable the guild roster (all members, pulled from Battle.net — no sign-in required)."

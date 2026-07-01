@@ -8,6 +8,7 @@ import CommentPost from 'flarum/forum/components/CommentPost';
 import TextEditor from 'flarum/common/components/TextEditor';
 import Button from 'flarum/common/components/Button';
 import ArmoryPage from './components/ArmoryPage';
+import ArmoryPostPane from './components/ArmoryPostPane';
 import ItemSearchModal from './components/ItemSearchModal';
 import { processWowItems } from './wowItems';
 
@@ -44,6 +45,16 @@ app.initializers.add('ernestdefoe-armory', () => {
         trans('log_in_with_battlenet')
       )
     );
+  });
+
+  // The author's character pane in each post's side column (below the avatar).
+  // Data rides in on the serialized user (`armoryMain`) — zero extra requests.
+  extend(CommentPost.prototype, 'sideItems', function (this: any, items: any) {
+    const user = this.attrs.post?.user?.();
+    const main = user && typeof user.attribute === 'function' ? user.attribute('armoryMain') : null;
+    if (main && main.name) {
+      items.add('armory', ArmoryPostPane.component({ main }), 90);
+    }
   });
 
   // Enhance [item=…] links in posts with the item name/quality/icon + a tooltip.

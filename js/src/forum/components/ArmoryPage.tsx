@@ -24,6 +24,8 @@ export default class ArmoryPage extends Page {
   activeTab = 'gear';
   syncing = false;
   importState: Record<string, string> = {};
+  guildMode = false;
+  guildData: any = null;
   private eq: any[] = [];
 
   oninit(vnode: any) {
@@ -145,14 +147,93 @@ export default class ArmoryPage extends Page {
   }
 
   view() {
+    const t = (k: string, params?: any) => app.translator.trans('ernestdefoe-armory.forum.' + k, params);
+
     return (
       <div className="ArmoryPage">
         <div className="container">
           <div className="ar-wrap">
-            <aside className="ar-roster">{this.chars.map((ch) => this.rosterItem(ch))}</aside>
-            <section className="ar-detail">{this.detailView()}</section>
+            <aside className="ar-roster">
+              {this.chars.map((ch) => this.rosterItem(ch))}
+              <button
+                type="button"
+                className={'ar-ritem ar-ritem--guild' + (this.guildMode ? ' active' : '')}
+                onclick={() => this.toggleGuild()}
+              >
+                <span className="ar-gicon" aria-hidden="true">
+                  <i className="fas fa-shield-halved" />
+                </span>
+                <span>
+                  <span className="ar-rname">{this.guildMode ? t('guild_back') : t('guild_button')}</span>
+                </span>
+              </button>
+            </aside>
+            <section className="ar-detail">{this.guildMode ? this.guildView() : this.detailView()}</section>
           </div>
         </div>
+      </div>
+    );
+  }
+
+  toggleGuild() {
+    this.guildMode = !this.guildMode;
+    if (this.guildMode && this.guildData === null) {
+      this.guildData = 'loading';
+      this.req('/armory/guild')
+        .then((r: any) => {
+          this.guildData = r && r.ok ? r : false;
+          m.redraw();
+        })
+        .catch(() => {
+          this.guildData = false;
+          m.redraw();
+        });
+    }
+    m.redraw();
+  }
+
+  guildView() {
+    const t = (k: string, params?: any) => app.translator.trans('ernestdefoe-armory.forum.' + k, params);
+    const g = this.guildData;
+
+    if (g === 'loading' || g === null) {
+      return (
+        <div className="ar-hero">
+          <div className="ar-empty">
+            <LoadingIndicator />
+            <p>{t('guild_loading')}</p>
+          </div>
+        </div>
+      );
+    }
+    if (!g) {
+      return (
+        <div className="ar-hero">
+          <div className="ar-empty">{t('guild_unavailable')}</div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="ar-hero ar-guild">
+        <header className="ar-guild-head">
+          <h2>{t('guild_title', { guild: g.guild || '' })}</h2>
+          <span className="ar-guild-count">{t('guild_members', { count: g.members.length })}</span>
+        </header>
+        <ul className="ar-guild-list">
+          {g.members.map((mb: any) => (
+            <li className="ar-guild-row">
+              <span className="ar-guild-name" style={{ color: cc(mb.class || '') }}>
+                {mb.name}
+              </span>
+              <span className="ar-guild-class">{mb.class || ''}</span>
+              <span className="ar-guild-level">{t('guild_level_short', { level: mb.level })}</span>
+              <span className={'ar-guild-rank' + (mb.rank === 0 ? ' is-gm' : '')}>
+                {mb.rank === 0 ? t('guild_rank_master') : t('guild_rank', { rank: mb.rank })}
+              </span>
+            </li>
+          ))}
+        </ul>
       </div>
     );
   }

@@ -22,5 +22,16 @@ export const extend = [
       options: { us: 'Americas (US)', eu: 'Europe (EU)', kr: 'Korea (KR)', tw: 'Taiwan (TW)' },
       default: 'us',
       label: app.translator.trans('ernestdefoe-armory.admin.region'),
+    }))
+    .setting(() => ({
+      setting: 'armory.guild_realm',
+      type: 'text',
+      label: app.translator.trans('ernestdefoe-armory.admin.guild_realm'),
+      help: app.translator.trans('ernestdefoe-armory.admin.guild_help'),
+    }))
+    .setting(() => ({
+      setting: 'armory.guild_name',
+      type: 'text',
+      label: app.translator.trans('ernestdefoe-armory.admin.guild_name'),
     })),
 ];

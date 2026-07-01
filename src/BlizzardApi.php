@@ -111,6 +111,23 @@ class BlizzardApi
         ]);
     }
 
+    /**
+     * Every member of a guild — name, realm, playable class id, level, rank.
+     * Guild endpoints live under the profile namespace but only need the
+     * client-credentials token, so no member has to link Battle.net for this.
+     */
+    public function guildRoster(string $region, string $realmSlug, string $guildSlug): ?array
+    {
+        $token = $this->clientToken();
+        if (! $token) {
+            return null;
+        }
+
+        return $this->getJson($this->apiHost($region).'/data/wow/guild/'.rawurlencode($realmSlug).'/'.rawurlencode($guildSlug).'/roster', $token, [
+            'namespace' => "profile-{$region}", 'locale' => 'en_US',
+        ]);
+    }
+
     public function character(string $r, string $rs, string $n): ?array
     {
         return $this->profileGet($r, $rs, $n, '');

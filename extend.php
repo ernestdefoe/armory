@@ -4,8 +4,12 @@
  * Armory for Flarum 2 — Battle.net sign-in + WoW character armory.
  */
 
+use ErnestDefoe\Armory\ArmoryCharacter;
 use ErnestDefoe\Armory\Controller;
+use Flarum\Api\Resource\UserResource;
+use Flarum\Api\Schema\Attribute;
 use Flarum\Extend;
+use Flarum\User\User;
 use s9e\TextFormatter\Configurator;
 
 return [
@@ -40,8 +44,46 @@ return [
         ->get('/armory/extra/{id}/{kind}', 'armory.extra', Controller\ExtraController::class)
         ->get('/armory/item/{id}', 'armory.item', Controller\ItemController::class)
         ->get('/armory/item-search', 'armory.item.search', Controller\ItemSearchController::class)
+        ->get('/armory/guild', 'armory.guild', Controller\GuildRosterController::class)
         ->post('/armory/sync', 'armory.sync', Controller\SyncController::class)
         ->post('/armory/character/{id}/{action}', 'armory.action', Controller\ActionController::class),
+
+    // The author's main (visible) character on every serialized user, so the
+    // post stream can show a character pane beside each post. One indexed
+    // lookup per distinct author per request (memoized below); only fields the
+    // public armory page already exposes.
+    (new Extend\ApiResource(UserResource::class))
+        ->fields(function () {
+            $memo = [];
+
+            return [
+                Attribute::make('armoryMain')
+                    ->get(function (User $user) use (&$memo) {
+                        if (! array_key_exists($user->id, $memo)) {
+                            $c = ArmoryCharacter::query()
+                                ->where('user_id', $user->id)
+                                ->where('is_visible', true)
+                                ->orderByDesc('is_main')
+                                ->orderByDesc('item_level')
+                                ->first();
+                            $memo[$user->id] = $c ? [
+                                'name' => $c->name,
+                                'realm' => $c->realm_slug,
+                                'level' => $c->level,
+                                'class' => $c->class,
+                                'race' => $c->race,
+                                'spec' => $c->spec,
+                                'itemLevel' => $c->item_level,
+                                'guild' => $c->guild,
+                                'avatarUrl' => $c->avatar_url,
+                                'renderUrl' => $c->render_url,
+                            ] : null;
+                        }
+
+                        return $memo[$user->id];
+                    }),
+            ];
+        }),
 
     // Parse [item=12345] in posts into a WoW item link (enhanced client-side
     // with the item name, quality color, icon, and a hover tooltip).
