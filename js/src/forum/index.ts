@@ -5,9 +5,11 @@ import IndexSidebar from 'flarum/forum/components/IndexSidebar';
 import LogInButtons from 'flarum/forum/components/LogInButtons';
 import LogInButton from 'flarum/forum/components/LogInButton';
 import CommentPost from 'flarum/forum/components/CommentPost';
+import DiscussionListItem from 'flarum/forum/components/DiscussionListItem';
 import TextEditor from 'flarum/common/components/TextEditor';
 import Button from 'flarum/common/components/Button';
 import ArmoryPage from './components/ArmoryPage';
+import ArmoryListAvatar from './components/ArmoryListAvatar';
 import ArmoryPostPane from './components/ArmoryPostPane';
 import ItemSearchModal from './components/ItemSearchModal';
 import { processWowItems } from './wowItems';
@@ -67,6 +69,18 @@ app.initializers.add('ernestdefoe-armory', () => {
 
   extend(CommentPost.prototype, 'classes', function (this: any, classes: string[]) {
     if (paneMain(this.attrs.post)) classes.push('Post--armory-pane');
+  });
+
+  // Discussion list: the author avatar becomes the main character's bust in a
+  // class-colored frame (same tooltip + profile link as the core item). Users
+  // without a linked character keep the regular avatar.
+  extend(DiscussionListItem.prototype, 'authorItems', function (this: any, items: any) {
+    const user = this.attrs.author || this.attrs.discussion?.user?.();
+    const main = user && typeof user.attribute === 'function' ? user.attribute('armoryMain') : null;
+    if (!user || !main || !(main.avatarUrl || main.renderUrl) || !items.has('avatar')) return;
+
+    items.remove('avatar');
+    items.add('avatar', ArmoryListAvatar.component({ user, main, discussion: this.attrs.discussion }), 100);
   });
 
   // Enhance [item=…] links in posts with the item name/quality/icon + a tooltip.

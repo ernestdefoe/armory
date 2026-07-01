@@ -338,3 +338,31 @@
     }
   }
 }
+
+// ── Discussion list character avatar (bust in a class frame) ─────────────
+.ArmoryListAvatar {
+  display: block;
+  width: 48px;
+  height: 48px;
+}
+
+.ArmoryListAvatar-img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--ar-class, var(--control-color)) 55%, transparent);
+  background: var(--control-bg);
+}
+
+@media @phone {
+  .ArmoryListAvatar {
+    width: 32px;
+    height: 32px;
+  }
+
+  .ArmoryListAvatar-img {
+    border-radius: 8px;
+  }
+}
