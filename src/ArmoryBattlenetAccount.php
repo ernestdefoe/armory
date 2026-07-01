@@ -18,6 +18,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $access_token
  * @property \Carbon\Carbon|null $token_expires_at
  * @property \Carbon\Carbon|null $synced_at
+ * @property bool        $main_confirmed
  */
 class ArmoryBattlenetAccount extends AbstractModel
 {
@@ -29,6 +30,7 @@ class ArmoryBattlenetAccount extends AbstractModel
         'user_id' => 'integer',
         'token_expires_at' => 'datetime',
         'synced_at' => 'datetime',
+        'main_confirmed' => 'boolean',
     ];
 
     public function user(): BelongsTo

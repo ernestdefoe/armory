@@ -197,13 +197,42 @@ class Armory
 
     // ── Member view ────────────────────────────────────────────────────────
 
+    /**
+     * Complete a social-signup link lazily: the OAuth callback caches the
+     * exchanged token per Battle.net id (the registration modal finishes in a
+     * later request, when the token is long gone), and the first authenticated
+     * armory visit claims it — so brand-new members arrive with their
+     * characters already syncing, no second OAuth hop.
+     */
+    public function completePendingSocialLink(User $user): void
+    {
+        if (ArmoryBattlenetAccount::query()->where('user_id', $user->id)->exists()) {
+            return;
+        }
+        $provider = $user->loginProviders()->where('provider', 'battlenet')->first();
+        if (! $provider) {
+            return;
+        }
+        $cache = resolve('cache.store');
+        $key = 'armory.pending_link.'.$provider->identifier;
+        $pending = $cache->get($key);
+        if (is_array($pending) && is_array($pending['token'] ?? null)) {
+            if ($this->storeLink((int) $user->id, $pending['token'], (array) ($pending['info'] ?? []))) {
+                $cache->forget($key);
+            }
+        }
+    }
+
     public function me(User $user): array
     {
+        $this->completePendingSocialLink($user);
+
         $acct = ArmoryBattlenetAccount::query()->where('user_id', $user->id)->first();
 
         return [
             'configured' => $this->api->configured(),
             'connected' => (bool) $acct,
+            'main_confirmed' => (bool) ($acct->main_confirmed ?? false),
             'battletag' => $acct->battletag ?? null,
             'region' => $acct->region ?? $this->api->region(),
             'synced_at' => optional($acct)->synced_at?->toIso8601String(),
@@ -236,6 +265,8 @@ class Armory
         }
         ArmoryCharacter::query()->where('user_id', $userId)->update(['is_main' => false]);
         ArmoryCharacter::query()->where('id', $charId)->update(['is_main' => true, 'is_visible' => true]);
+        // An explicit pick ends the "choose your primary character" onboarding.
+        ArmoryBattlenetAccount::query()->where('user_id', $userId)->update(['main_confirmed' => true]);
 
         return true;
     }

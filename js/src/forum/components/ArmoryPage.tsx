@@ -26,6 +26,8 @@ export default class ArmoryPage extends Page {
   importState: Record<string, string> = {};
   guildMode = false;
   guildData: any = null;
+  mainConfirmed = true;
+  settingMain = false;
   private eq: any[] = [];
 
   oninit(vnode: any) {
@@ -66,6 +68,7 @@ export default class ArmoryPage extends Page {
           this.own = true;
           this.rpOk = !!s.rp_installed;
           this.arenaOk = !!s.arena_installed;
+          this.mainConfirmed = !!s.main_confirmed;
           this.chars = s.characters || [];
           if (!this.chars.length) {
             this.error = 'No characters synced yet. Make sure they have logged in recently, then Sync.';
@@ -152,6 +155,12 @@ export default class ArmoryPage extends Page {
     return (
       <div className="ArmoryPage">
         <div className="container">
+          {this.own && this.chars.length > 0 && !this.mainConfirmed ? (
+            <div className="ar-pickbanner">
+              <i className="fas fa-star" aria-hidden="true" />
+              <span>{t('pick_main_banner')}</span>
+            </div>
+          ) : null}
           <div className="ar-wrap">
             <aside className="ar-roster">
               {this.chars.map((ch) => this.rosterItem(ch))}
@@ -239,6 +248,8 @@ export default class ArmoryPage extends Page {
   }
 
   rosterItem(ch: any) {
+    const t = (k: string) => app.translator.trans('ernestdefoe-armory.forum.' + k);
+
     return (
       <button type="button" className={'ar-ritem' + (String(ch.id) === String(this.activeId) ? ' active' : '')} onclick={() => this.loadFull(ch.id)}>
         {ch.avatar_url ? <img src={ch.avatar_url} alt="" /> : null}
@@ -247,8 +258,39 @@ export default class ArmoryPage extends Page {
           <br />
           <span className="ar-rmeta">{(ch.item_level || 0) + ' ilvl · ' + (ch.realm_slug || '').replace(/-/g, ' ')}</span>
         </span>
+        {this.own ? (
+          <span
+            role="button"
+            tabindex="0"
+            className={'ar-star' + (ch.is_main ? ' on' : '')}
+            title={String(ch.is_main ? t('primary_character') : t('make_primary'))}
+            aria-label={String(ch.is_main ? t('primary_character') : t('make_primary'))}
+            onclick={(e: MouseEvent) => {
+              e.stopPropagation();
+              if (!ch.is_main) this.setMainChar(ch.id);
+            }}
+          >
+            <i className={(ch.is_main ? 'fas' : 'far') + ' fa-star'} aria-hidden="true" />
+          </span>
+        ) : null}
       </button>
     );
+  }
+
+  setMainChar(id: any) {
+    if (this.settingMain) return;
+    this.settingMain = true;
+    this.req('/armory/character/' + id + '/main', 'POST')
+      .then(() => {
+        this.chars = this.chars.map((c: any) => ({ ...c, is_main: String(c.id) === String(id) }));
+        this.mainConfirmed = true;
+        this.settingMain = false;
+        m.redraw();
+      })
+      .catch(() => {
+        this.settingMain = false;
+        m.redraw();
+      });
   }
 
   detailView() {

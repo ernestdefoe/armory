@@ -19,6 +19,12 @@ ernestdefoe-armory:
     guild_level_short: "Level {level}"
     guild_unavailable: The guild roster is not available yet. An admin can set the guild realm and name in the Armory settings.
     guild_loading: Summoning the roster…
+    bnet_only_error: New accounts are created by signing in with Battle.net.
+    needs_main_alert: Welcome to the pact — choose your primary character to complete your profile.
+    needs_main_cta: Choose now
+    pick_main_banner: Pick your primary character — it will represent you beside your posts and across the forum. Use the star on a character to choose.
+    make_primary: Make primary
+    primary_character: Primary character
 
   admin:
     client_id: Battle.net Client ID
@@ -28,3 +34,5 @@ ernestdefoe-armory:
     guild_realm: Guild realm
     guild_name: Guild name
     guild_help: "Set your guild's realm and exact in-game name to enable the guild roster (all members, pulled from Battle.net — no sign-in required)."
+    bnet_only_label: Battle.net sign-ups only
+    bnet_only_help: "Hide regular registration and require new members to sign up through Battle.net. Admins can still create accounts manually; existing password accounts keep working."

@@ -77,6 +77,14 @@ class CallbackController implements RequestHandlerInterface
                     'error' => $e->getMessage(),
                 ]);
             }
+        } else {
+            // Brand-new identity: registration completes in a LATER request (the
+            // signup modal), when this token is gone. Park it briefly so the
+            // first armory visit can finish the link without a second OAuth hop.
+            resolve('cache.store')->put('armory.pending_link.'.$bnetId, [
+                'token' => $token,
+                'info' => is_array($info) ? $info : [],
+            ], 600);
         }
 
         return $this->response->make(

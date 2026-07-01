@@ -4,11 +4,16 @@
  * Armory for Flarum 2 — Battle.net sign-in + WoW character armory.
  */
 
+use ErnestDefoe\Armory\ArmoryBattlenetAccount;
 use ErnestDefoe\Armory\ArmoryCharacter;
 use ErnestDefoe\Armory\Controller;
+use ErnestDefoe\Armory\Listener\RequireBattlenetSignUp;
+use Flarum\Api\Context;
+use Flarum\Api\Resource\ForumResource;
 use Flarum\Api\Resource\UserResource;
 use Flarum\Api\Schema\Attribute;
 use Flarum\Extend;
+use Flarum\User\Event\Saving;
 use Flarum\User\User;
 use s9e\TextFormatter\Configurator;
 
@@ -26,8 +31,15 @@ return [
     // Tell the frontend whether Battle.net sign-in is available (so the social
     // login button only shows once an admin has configured the API client).
     (new Extend\Settings())
+        ->default('armory.bnet_only', false)
         ->serializeToForum('armory.configured', 'armory.client_id', fn ($v) => trim((string) $v) !== '')
-        ->serializeToForum('armory.region', 'armory.region', fn ($v) => in_array($v, ['us', 'eu', 'kr', 'tw'], true) ? $v : 'us'),
+        ->serializeToForum('armory.region', 'armory.region', fn ($v) => in_array($v, ['us', 'eu', 'kr', 'tw'], true) ? $v : 'us')
+        ->serializeToForum('armory.bnetOnly', 'armory.bnet_only', fn ($v) => (bool) (int) $v),
+
+    // Server-side gate for "Battle.net only" registrations (the hidden Sign Up
+    // buttons are convenience, not security).
+    (new Extend\Event())
+        ->listen(Saving::class, RequireBattlenetSignUp::class),
 
     // Battle.net OAuth dance — forum (browser) routes: they carry the session,
     // so the signed-in member is resolved via RequestUtil::getActor.
@@ -47,6 +59,31 @@ return [
         ->get('/armory/guild', 'armory.guild', Controller\GuildRosterController::class)
         ->post('/armory/sync', 'armory.sync', Controller\SyncController::class)
         ->post('/armory/character/{id}/{action}', 'armory.action', Controller\ActionController::class),
+
+    // Per-actor nudge: true when the signed-in member has (or is about to get)
+    // linked characters but hasn't explicitly confirmed a primary yet — drives
+    // the "choose your primary character" onboarding alert.
+    (new Extend\ApiResource(ForumResource::class))
+        ->fields(fn () => [
+            Attribute::make('armoryNeedsMain')
+                ->get(function ($forum, Context $context) {
+                    $actor = $context->getActor();
+                    if (! $actor || $actor->isGuest()) {
+                        return false;
+                    }
+                    $acct = ArmoryBattlenetAccount::query()
+                        ->where('user_id', $actor->id)
+                        ->first(['id', 'main_confirmed']);
+                    if ($acct) {
+                        return ! $acct->main_confirmed
+                            && ArmoryCharacter::query()->where('user_id', $actor->id)->exists();
+                    }
+
+                    // Fresh social signup whose link completes lazily on the
+                    // first armory visit — nudge them there.
+                    return $actor->loginProviders()->where('provider', 'battlenet')->exists();
+                }),
+        ]),
 
     // The author's main (visible) character on every serialized user, so the
     // post stream can show a character pane beside each post. One indexed

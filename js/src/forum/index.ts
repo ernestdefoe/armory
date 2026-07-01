@@ -1,6 +1,8 @@
 import app from 'flarum/forum/app';
 import { extend } from 'flarum/common/extend';
+import Application from 'flarum/common/Application';
 import LinkButton from 'flarum/common/components/LinkButton';
+import HeaderSecondary from 'flarum/forum/components/HeaderSecondary';
 import IndexSidebar from 'flarum/forum/components/IndexSidebar';
 import LogInButtons from 'flarum/forum/components/LogInButtons';
 import LogInButton from 'flarum/forum/components/LogInButton';
@@ -47,6 +49,36 @@ app.initializers.add('ernestdefoe-armory', () => {
         trans('log_in_with_battlenet')
       )
     );
+  });
+
+  // Battle.net-only mode: hide the regular Sign Up affordances. The server
+  // enforces this too (RequireBattlenetSignUp) — this is just the UI half.
+  extend(HeaderSecondary.prototype, 'items', (items: any) => {
+    if (app.forum.attribute('armory.bnetOnly') && app.forum.attribute('armory.configured') && items.has('signUp')) {
+      items.remove('signUp');
+    }
+  });
+
+  // Root-level marker so CSS can hide the log-in modal's "Sign Up" footer
+  // link, plus the one-time "choose your primary character" onboarding nudge.
+  // Attribute reads live in mount — app.forum is not populated during init.
+  extend(Application.prototype, 'mount', function () {
+    if (app.forum.attribute('armory.bnetOnly') && app.forum.attribute('armory.configured')) {
+      document.documentElement.classList.add('armory-bnet-only');
+    }
+
+    if (app.session.user && app.forum.attribute('armoryNeedsMain')) {
+      app.alerts.show(
+        {
+          type: 'success',
+          dismissible: true,
+          controls: [
+            LinkButton.component({ href: app.route('armory'), icon: 'fas fa-star' }, trans('needs_main_cta')),
+          ],
+        },
+        trans('needs_main_alert')
+      );
+    }
   });
 
   // The author's character pane in each post's side column. It REPLACES the
