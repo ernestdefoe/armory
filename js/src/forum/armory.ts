@@ -39,6 +39,7 @@ export function mountArmory(root: HTMLElement, csrf: string) {
   let activeTab = 'gear';
   let OWN = false;
   let RP_OK = false;
+  let ARENA_OK = false;
   const EQ: any[] = [];
   const LEFT: [string, string[]][] = [['Head', ['head']], ['Neck', ['neck']], ['Shoulders', ['shoulder']], ['Back', ['back']], ['Chest', ['chest']], ['Shirt', ['shirt']], ['Tabard', ['tabard']], ['Wrist', ['wrist']]];
   const RIGHT: [string, string[]][] = [['Hands', ['hands']], ['Waist', ['waist']], ['Legs', ['legs']], ['Feet', ['feet']], ['Ring 1', ['ring 1', 'finger 1']], ['Ring 2', ['ring 2', 'finger 2']], ['Trinket 1', ['trinket 1']], ['Trinket 2', ['trinket 2']]];
@@ -75,7 +76,8 @@ export function mountArmory(root: HTMLElement, csrf: string) {
     const title = 'Level ' + (c.level || 0) + ' ' + esc(c.race || '') + ' ' + esc(c.spec ? c.spec + ' ' : '') + esc(c.class || '') + guild + ' · ' + esc((c.realm_slug || '').replace(/-/g, ' ')) + ' (' + esc((c.region || 'us').toUpperCase()) + ')' + fac;
     const sync = OWN ? '<button type="button" id="ar-sync" class="Button Button--text ar-syncbtn">Sync</button>' : '';
     const rp = OWN && RP_OK ? '<button type="button" id="ar-rp" class="Button Button--primary ar-syncbtn"><i class="fas fa-dice-d20"></i> Add to Role-Play</button>' : '';
-    return '<div class="ar-head"><div><h1 class="ar-name" style="color:' + cc(c.class) + '">' + esc(c.name) + '</h1><div class="ar-titleline">' + title + '</div></div><div class="ar-ilvl"><b>' + (c.item_level || 0) + '</b><span>Item level</span></div>' + rp + sync + '</div>';
+    const arena = OWN && ARENA_OK ? '<button type="button" id="ar-arena" class="Button Button--primary ar-syncbtn"><i class="fas fa-dungeon"></i> Add to Arena</button>' : '';
+    return '<div class="ar-head"><div><h1 class="ar-name" style="color:' + cc(c.class) + '">' + esc(c.name) + '</h1><div class="ar-titleline">' + title + '</div></div><div class="ar-ilvl"><b>' + (c.item_level || 0) + '</b><span>Item level</span></div>' + rp + arena + sync + '</div>';
   }
   function gearHtml(c: any, eq: any[]) {
     const weps = WEPS.map((w) => slotHtml(w[0], findItem(eq, w[1]))).join('');
@@ -189,6 +191,15 @@ export function mountArmory(root: HTMLElement, csrf: string) {
         else { rb.innerHTML = orig; window.alert((r && r.error) || 'Role-Play import failed.'); }
       });
     };
+    const ab = detail.querySelector('#ar-arena') as HTMLElement;
+    if (ab) ab.onclick = () => {
+      const orig = ab.innerHTML;
+      ab.textContent = 'Importing…';
+      postAction('/armory/character/' + D.character.id + '/arena').then((r: any) => {
+        if (r && r.ok) { ab.innerHTML = '<i class="fas fa-check"></i> Deck built (' + r.cards + ' cards)'; }
+        else { ab.innerHTML = orig; window.alert((r && r.error) || 'Arena import failed.'); }
+      });
+    };
   }
 
   function loadFull(id: any, chars?: any[]) {
@@ -210,6 +221,7 @@ export function mountArmory(root: HTMLElement, csrf: string) {
       if (!s.connected) { empty('Connect your Battle.net account to load your characters.', '<br><br><a class="Button Button--primary" href="/auth/battlenet">Connect Battle.net</a>'); return; }
       OWN = true;
       RP_OK = !!s.rp_installed;
+      ARENA_OK = !!s.arena_installed;
       const chars = s.characters || [];
       if (!chars.length) { empty('No characters synced yet. Make sure they have logged in recently, then Sync.'); return; }
       const main = chars.filter((c: any) => c.is_main)[0] || chars[0];

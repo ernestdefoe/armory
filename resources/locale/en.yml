@@ -1,6 +1,7 @@
 ernestdefoe-armory:
   forum:
     nav: Armory
+    arena: Arena
     log_in_with_battlenet: Sign in with Battle.net
     item_link_button: Link a WoW item
     item_search:

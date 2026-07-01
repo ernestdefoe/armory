@@ -26,6 +26,20 @@ app.initializers.add('ernestdefoe-armory', () => {
       LinkButton.component({ icon: 'fab fa-battle-net', href: app.route('armory'), className: 'Button Button--link' }, trans('nav')),
       5
     );
+
+    // An Arena link too, when the Arena extension (forumaker/arena) is installed.
+    // Arena's page is per-user (their deck builder), so only for signed-in members.
+    const user = app.session.user;
+    if (user && app.routes['user.arena']) {
+      items.add(
+        'arena',
+        LinkButton.component(
+          { icon: 'fas fa-dungeon', href: app.route('user.arena', { username: user.username() }), className: 'Button Button--link' },
+          trans('arena')
+        ),
+        4
+      );
+    }
   });
 
   // …and in the index sidebar navigation.

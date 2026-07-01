@@ -24,9 +24,12 @@ class ActionController implements RequestHandlerInterface
         $action = (string) ($q['action'] ?? '');
         $uid = (int) $actor->id;
 
-        // The Role-Play import returns a richer payload (cards generated, name).
+        // The Role-Play / Arena imports return a richer payload (cards generated, name).
         if ($action === 'roleplay') {
             return new JsonResponse($this->armory->toRoleplay($uid, $id));
+        }
+        if ($action === 'arena') {
+            return new JsonResponse($this->armory->toArena($uid, $id));
         }
 
         $ok = match ($action) {
