@@ -398,7 +398,7 @@ class Armory
     ];
 
     /** The configured guild's full roster (cached 1h), or null when unset/unavailable. */
-    public function guildRoster(): ?array
+    public function guildRoster(bool $fresh = false): ?array
     {
         $realm = trim((string) $this->settings->get('armory.guild_realm'));
         $name = trim((string) $this->settings->get('armory.guild_name'));
@@ -411,7 +411,9 @@ class Armory
         $guildSlug = $this->guildSlugify($name);
         $key = "armory.guild_roster.{$region}.{$realmSlug}.{$guildSlug}";
 
-        if ($this->cache && ($hit = $this->cache->get($key))) {
+        // $fresh bypasses the read (the "Refresh roster" button) but still
+        // re-caches the fresh result below, so everyone benefits from the pull.
+        if (! $fresh && $this->cache && ($hit = $this->cache->get($key))) {
             return $hit;
         }
 

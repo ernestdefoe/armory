@@ -23,6 +23,26 @@ app.initializers.add('ernestdefoe-armory', () => {
   app.routes['armory.guildpage'] = { path: '/guild', component: GuildPage };
   app.routes['armory.guildpage.member'] = { path: '/guild/:realm/:name', component: GuildPage };
 
+  // Blizzard's render CDN occasionally 500s on freshly released item/character
+  // media (cross-origin failures also surface as a "CORS" console error). Swap
+  // any failed WoW image to a transparent pixel so the bordered gear slot /
+  // avatar frame stays put instead of a broken-image glyph. One capturing
+  // listener covers every armory image (gear grid, tooltips, item links,
+  // avatars) without touching each render path — load errors don't bubble, so
+  // capture must be true.
+  const BLANK = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+  window.addEventListener(
+    'error',
+    (e: Event) => {
+      const t = e.target as HTMLImageElement | null;
+      if (!t || t.tagName !== 'IMG' || !t.src) return;
+      if (!/worldofwarcraft\.com/i.test(t.src) || t.dataset.armoryBroken) return;
+      t.dataset.armoryBroken = '1';
+      t.src = BLANK;
+    },
+    true
+  );
+
   const trans = (k: string) => app.translator.trans('ernestdefoe-armory.forum.' + k);
 
   // Bespoke integration: "Now Recruiting" widget (class cards with official

@@ -19,6 +19,8 @@ ernestdefoe-armory:
     guild_nav: Guild
     guild_page_title: Guild roster
     guild_members: "{count} members"
+    guild_refresh: Refresh roster from Battle.net
+    guild_refresh_failed: Could not refresh the roster. Try again in a moment.
     guild_rank_master: Guild master
     guild_rank: "Rank {rank}"
     guild_level_short: "Level {level}"

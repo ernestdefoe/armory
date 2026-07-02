@@ -12,6 +12,7 @@ import { buildTip, showTip, positionTip, hideTip } from '../tooltip';
  */
 export default class GuildPage extends Page {
   loading = true;
+  refreshing = false;
   roster: any = null;
   selected: { realm: string; name: string } | null = null;
   D: any = null;
@@ -49,6 +50,25 @@ export default class GuildPage extends Page {
 
   private req(path: string) {
     return app.request<any>({ method: 'GET', url: app.forum.attribute('apiUrl') + path });
+  }
+
+  refreshRoster() {
+    if (this.refreshing) return;
+    this.refreshing = true;
+    m.redraw();
+
+    app
+      .request<any>({ method: 'POST', url: app.forum.attribute('apiUrl') + '/armory/guild/refresh' })
+      .then((r: any) => {
+        if (r && r.ok) this.roster = r;
+      })
+      .catch(() => {
+        app.alerts.show({ type: 'error' }, this.t('guild_refresh_failed'));
+      })
+      .then(() => {
+        this.refreshing = false;
+        m.redraw();
+      });
   }
 
   loadMember(realm: string, name: string, pushRoute = true) {
@@ -114,6 +134,18 @@ export default class GuildPage extends Page {
       <header className="gp-head">
         <h2>{this.roster.guild}</h2>
         <span className="ar-guild-count">{this.t('guild_members', { count: this.roster.members.length })}</span>
+        {app.session.user ? (
+          <button
+            type="button"
+            className="Button Button--icon gp-refresh"
+            disabled={this.refreshing}
+            title={String(this.t('guild_refresh'))}
+            aria-label={String(this.t('guild_refresh'))}
+            onclick={() => this.refreshRoster()}
+          >
+            <i className={'fas fa-arrows-rotate' + (this.refreshing ? ' fa-spin' : '')} aria-hidden="true" />
+          </button>
+        ) : null}
       </header>,
       <ul className="ar-guild-list gp-list">
         {this.roster.members.map((mb: any) => {
