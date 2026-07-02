@@ -8,12 +8,9 @@
 
 import { esc, QUAL } from './tooltip';
 
-export const CLASS_COLOR: Record<string, string> = {
-  'Death Knight': '#C41E3A', 'Demon Hunter': '#A330C9', Druid: '#FF7C0A', Evoker: '#33937F',
-  Hunter: '#AAD372', Mage: '#3FC7EB', Monk: '#00FF98', Paladin: '#F48CBA', Priest: '#bfbfbf',
-  Rogue: '#FFF468', Shaman: '#0070DD', Warlock: '#8788EE', Warrior: '#C69B6D',
-};
-export const cc = (k: string) => CLASS_COLOR[k] || 'inherit';
+// Class colors live in the shared catalog now (the admin bundle needs them
+// too); re-exported so every existing `from '../render'` import keeps working.
+export { CLASS_COLOR, cc } from '../common/classCatalog';
 export const fc = (f: string) => (/horde/i.test(f || '') ? '#b91c1c' : /alliance/i.test(f || '') ? '#1f6feb' : 'inherit');
 export const tz = (s: string) => (s ? s.charAt(0) + s.slice(1).toLowerCase() : s);
 

@@ -35,7 +35,8 @@ ernestdefoe-armory:
 
   admin:
     recruiting_label: Now recruiting (classes)
-    recruiting_help: "One class per line, with an optional note after a colon — e.g. \"shaman: Resto or Elemental\". Valid classes: warrior, paladin, hunter, rogue, priest, death knight, shaman, mage, warlock, monk, druid, demon hunter, evoker. Shown by the Now Recruiting widget in the theme editor."
+    recruiting_help: Tick the classes you're actively recruiting and add an optional note per class (specs, priority). Shown by the Now Recruiting widget — add it from the theme editor's Widgets tray.
+    recruiting_note_placeholder: "Note — e.g. Resto or Elemental (optional)"
     client_id: Battle.net Client ID
     client_secret: Battle.net Client Secret
     client_help: "Create an API client at develop.battle.net/access/clients and set its Redirect URL to https://YOUR-FORUM/auth/battlenet/callback. Then paste the id + secret here."

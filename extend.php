@@ -6,13 +6,12 @@
 
 use ErnestDefoe\Armory\ArmoryBattlenetAccount;
 use ErnestDefoe\Armory\ArmoryCharacter;
-use ErnestDefoe\Armory\BlizzardApi;
+use ErnestDefoe\Armory\ClassIcons;
 use ErnestDefoe\Armory\Controller;
 use ErnestDefoe\Armory\Listener\RequireBattlenetSignUp;
 use ErnestDefoe\Armory\PlayableClasses;
 use Flarum\Api\Context;
 use Flarum\Settings\SettingsRepositoryInterface;
-use Illuminate\Contracts\Cache\Repository as CacheRepository;
 use Flarum\Api\Resource\ForumResource;
 use Flarum\Api\Resource\UserResource;
 use Flarum\Api\Schema\Attribute;
@@ -30,7 +29,8 @@ return [
         ->route('/guild/{realm}/{name}', 'armory.guildpage.member'),
 
     (new Extend\Frontend('admin'))
-        ->js(__DIR__ . '/js/dist/admin.js'),
+        ->js(__DIR__ . '/js/dist/admin.js')
+        ->css(__DIR__ . '/less/admin.less'),
 
     new Extend\Locales(__DIR__ . '/resources/locale'),
 
@@ -55,6 +55,7 @@ return [
 
     // JSON API.
     (new Extend\Routes('api'))
+        ->get('/armory/classes', 'armory.classes', Controller\ClassesController::class)
         ->get('/armory/config', 'armory.config', Controller\ConfigController::class)
         ->get('/armory/me', 'armory.me', Controller\MeController::class)
         ->get('/armory/full/{id}', 'armory.full', Controller\FullController::class)
@@ -106,30 +107,9 @@ return [
                             return [];
                         }
 
-                        $region = (string) $settings->get('armory.region');
-                        $region = in_array($region, ['us', 'eu', 'kr', 'tw'], true) ? $region : 'us';
-
-                        // Whole-catalog icon map, cached a week. Only cached when
-                        // at least one icon resolved — otherwise a pre-credentials
-                        // lookup would pin nulls for 7 days.
-                        $icons = [];
-                        try {
-                            $cache = resolve(CacheRepository::class);
-                            $key = 'armory.class-icons.' . $region;
-                            $icons = $cache->get($key);
-                            if (! is_array($icons)) {
-                                $api = resolve(BlizzardApi::class);
-                                $icons = [];
-                                foreach (PlayableClasses::ALL as $slug => [$id, $name]) {
-                                    $icons[$slug] = $api->playableClassIcon($region, $id);
-                                }
-                                if (array_filter($icons) !== []) {
-                                    $cache->put($key, $icons, 604800);
-                                }
-                            }
-                        } catch (\Throwable $e) {
-                            $icons = [];
-                        }
+                        // Whole-catalog icon map via the shared service (cached
+                        // a week; never caches a pre-credentials all-null map).
+                        $icons = resolve(ClassIcons::class)->map();
 
                         return array_map(fn ($c) => [
                             'slug' => $c['slug'],
