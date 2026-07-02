@@ -299,9 +299,19 @@ class Armory
             return ['ok' => false, 'reason' => 'not_linked'];
         }
         $region = $acct->region ?: $this->api->region();
+
+        // Listing the account's characters needs the user's OAuth token, which
+        // lasts ~24h with no refresh. Once it's expired we can't discover NEW
+        // characters (or re-list at all) — so signal the UI to re-authenticate
+        // with Battle.net for a fresh token instead of silently returning the
+        // stale roster (which reads as "it's not finding my new characters").
+        if ($acct->token_expires_at && Carbon::parse($acct->token_expires_at)->isPast()) {
+            return ['ok' => false, 'reason' => 'reauth'];
+        }
+
         $profile = $this->api->accountProfile($accessToken, $region);
         if (! $profile) {
-            return ['ok' => false, 'reason' => 'profile_unavailable'];
+            return ['ok' => false, 'reason' => 'reauth'];
         }
 
         $found = 0;

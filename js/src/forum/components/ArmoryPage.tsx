@@ -126,10 +126,26 @@ export default class ArmoryPage extends Page {
 
   doSync() {
     this.syncing = true;
-    this.req('/armory/sync', 'POST').then(() => this.boot()).catch(() => {
-      this.syncing = false;
-      m.redraw();
-    });
+    this.req('/armory/sync', 'POST')
+      .then((r: any) => {
+        if (r && r.ok) {
+          this.boot();
+          return;
+        }
+        // Token expired / not linked: re-authenticate with Battle.net so we can
+        // re-list the account and pick up newly created characters. The callback
+        // re-syncs automatically with the fresh token.
+        if (r && (r.reason === 'reauth' || r.reason === 'not_linked' || r.reason === 'profile_unavailable')) {
+          window.location.href = app.forum.attribute('baseUrl') + '/auth/battlenet';
+          return;
+        }
+        this.syncing = false;
+        m.redraw();
+      })
+      .catch(() => {
+        this.syncing = false;
+        m.redraw();
+      });
   }
 
   doImport(action: string) {
