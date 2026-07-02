@@ -387,6 +387,218 @@ class Armory
         return $data;
     }
 
+    // ── Guild roster + member lookup (client credentials; public game data) ──
+
+    /** playable_class id → class name (static per game build). */
+    private const GUILD_CLASSES = [
+        1 => 'Warrior', 2 => 'Paladin', 3 => 'Hunter', 4 => 'Rogue',
+        5 => 'Priest', 6 => 'Death Knight', 7 => 'Shaman', 8 => 'Mage',
+        9 => 'Warlock', 10 => 'Monk', 11 => 'Druid', 12 => 'Demon Hunter',
+        13 => 'Evoker',
+    ];
+
+    /** The configured guild's full roster (cached 1h), or null when unset/unavailable. */
+    public function guildRoster(): ?array
+    {
+        $realm = trim((string) $this->settings->get('armory.guild_realm'));
+        $name = trim((string) $this->settings->get('armory.guild_name'));
+        if ($realm === '' || $name === '') {
+            return null;
+        }
+
+        $region = $this->api->region();
+        $realmSlug = $this->guildSlugify($realm);
+        $guildSlug = $this->guildSlugify($name);
+        $key = "armory.guild_roster.{$region}.{$realmSlug}.{$guildSlug}";
+
+        if ($this->cache && ($hit = $this->cache->get($key))) {
+            return $hit;
+        }
+
+        $raw = $this->api->guildRoster($region, $realmSlug, $guildSlug);
+
+        // Connected realms: the guild entity lives under its CREATION realm's
+        // slug (often not the realm members play on). On a miss, resolve the
+        // canonical slug from a synced member's profile and retry once.
+        if (! is_array($raw)) {
+            $canonical = $this->canonicalGuildRealm($region, $guildSlug);
+            if ($canonical !== null && $canonical !== $realmSlug) {
+                $raw = $this->api->guildRoster($region, $canonical, $guildSlug);
+            }
+        }
+
+        if (! is_array($raw) || ! is_array($raw['members'] ?? null)) {
+            return null;
+        }
+
+        $members = [];
+        foreach ($raw['members'] as $m) {
+            $c = $m['character'] ?? null;
+            if (! is_array($c) || ! isset($c['name'])) {
+                continue;
+            }
+            $members[] = [
+                'name' => (string) $c['name'],
+                'realm' => (string) ($c['realm']['slug'] ?? $realmSlug),
+                'level' => (int) ($c['level'] ?? 0),
+                'class' => self::GUILD_CLASSES[(int) ($c['playable_class']['id'] ?? 0)] ?? null,
+                'rank' => (int) ($m['rank'] ?? 99),
+            ];
+        }
+        usort($members, fn ($a, $b) => [$a['rank'], -$a['level'], $a['name']] <=> [$b['rank'], -$b['level'], $b['name']]);
+
+        $data = [
+            'guild' => (string) ($raw['guild']['name'] ?? ''),
+            'realm' => (string) ($raw['guild']['realm']['slug'] ?? $realmSlug),
+            'members' => $members,
+        ];
+        $this->cache?->put($key, $data, 3600);
+
+        return $data;
+    }
+
+    /** True when realm+name matches a member of the configured guild's roster. */
+    public function isGuildMember(string $realmSlug, string $name): bool
+    {
+        $roster = $this->guildRoster();
+        if (! $roster) {
+            return false;
+        }
+        $realmSlug = mb_strtolower($realmSlug);
+        $name = mb_strtolower($name);
+        foreach ($roster['members'] as $m) {
+            if (mb_strtolower($m['realm']) === $realmSlug && mb_strtolower($m['name']) === $name) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * The same full-character payload as {@see full()} but for an arbitrary
+     * GUILD MEMBER by realm+name — no DB row required (guild data is public
+     * via the client-credentials token). Restricted to roster members so this
+     * never becomes an open proxy for arbitrary character lookups.
+     */
+    public function fullByName(string $realmSlug, string $name): array
+    {
+        $realmSlug = mb_strtolower(trim($realmSlug));
+        $name = trim($name);
+        if ($realmSlug === '' || $name === '' || ! $this->isGuildMember($realmSlug, $name)) {
+            return ['ok' => false];
+        }
+
+        $r = $this->api->region();
+        $n = mb_strtolower($name);
+        $key = 'armory.lookup.'.md5("{$r}|{$realmSlug}|{$n}");
+        if ($this->cache && ($hit = $this->cache->get($key))) {
+            return $hit;
+        }
+
+        $p = $this->api->character($r, $realmSlug, $n);
+        if (! is_array($p)) {
+            return ['ok' => false];
+        }
+        $media = $this->api->characterMedia($r, $realmSlug, $n) ?? [];
+
+        $character = [
+            'id' => null,
+            'lookup' => true,
+            'user_id' => null,
+            'region' => $r,
+            'realm_slug' => $realmSlug,
+            'name' => (string) ($p['name'] ?? $name),
+            'level' => (int) ($p['level'] ?? 0),
+            'class' => $p['character_class']['name'] ?? null,
+            'race' => $p['race']['name'] ?? null,
+            'faction' => $p['faction']['type'] ?? null,
+            'spec' => $p['active_spec']['name'] ?? null,
+            'item_level' => (int) ($p['equipped_item_level'] ?? 0),
+            'guild' => $p['guild']['name'] ?? null,
+            'avatar_url' => $this->api->mediaUrl($media, 'avatar'),
+            'render_url' => $this->api->mediaUrl($media, 'main-raw') ?? $this->api->mediaUrl($media, 'main'),
+        ];
+
+        $data = [
+            'ok' => true,
+            'lookup' => true,
+            'character' => $character,
+            'equipment' => $this->equipmentBlock($r, $realmSlug, $n),
+            'stats' => $this->statBlock($r, $realmSlug, $n),
+            'talents' => $this->talentBlock($r, $realmSlug, $n),
+            'mythic' => $this->mythicBlock($r, $realmSlug, $n),
+            'raids' => $this->raidBlock($r, $realmSlug, $n),
+            'professions' => $this->profBlock($r, $realmSlug, $n),
+        ];
+        $this->cache?->put($key, $data, 600);
+
+        return $data;
+    }
+
+    /** Lazy extra tabs (pvp/reputations/achievements) for a roster lookup. */
+    public function extraByName(string $realmSlug, string $name, string $kind): array
+    {
+        $realmSlug = mb_strtolower(trim($realmSlug));
+        $name = trim($name);
+        if (! in_array($kind, ['pvp', 'reputations', 'achievements'], true)
+            || $realmSlug === '' || $name === '' || ! $this->isGuildMember($realmSlug, $name)) {
+            return ['ok' => false];
+        }
+
+        $r = $this->api->region();
+        $n = mb_strtolower($name);
+        $key = 'armory.lookupextra.'.md5("{$r}|{$realmSlug}|{$n}|{$kind}");
+        if ($this->cache && ($hit = $this->cache->get($key))) {
+            return $hit;
+        }
+        $data = ['ok' => true, 'data' => match ($kind) {
+            'pvp' => $this->pvpBlock($r, $realmSlug, $n),
+            'reputations' => $this->repBlock($r, $realmSlug, $n),
+            'achievements' => $this->achieveBlock($r, $realmSlug, $n),
+            default => null,
+        }];
+        $this->cache?->put($key, $data, 600);
+
+        return $data;
+    }
+
+    /**
+     * Resolve the guild's canonical realm slug by asking Blizzard about a
+     * synced character that belongs to the guild. Cached a day.
+     */
+    private function canonicalGuildRealm(string $region, string $guildSlug): ?string
+    {
+        $key = "armory.guild_canonical_realm.{$region}.{$guildSlug}";
+        if ($this->cache && ($hit = $this->cache->get($key))) {
+            return $hit === '' ? null : $hit;
+        }
+
+        $member = ArmoryCharacter::query()
+            ->whereNotNull('guild')
+            ->where('region', $region)
+            ->get(['name', 'realm_slug', 'guild'])
+            ->first(fn ($c) => $this->guildSlugify((string) $c->guild) === $guildSlug);
+
+        $slug = null;
+        if ($member) {
+            $profile = $this->api->character($region, $member->realm_slug, mb_strtolower($member->name));
+            $slug = $profile['guild']['realm']['slug'] ?? null;
+        }
+        $this->cache?->put($key, $slug ?? '', 86400);
+
+        return $slug;
+    }
+
+    /** Blizzard slug: lowercase, apostrophes dropped, spaces become dashes. */
+    private function guildSlugify(string $value): string
+    {
+        $value = mb_strtolower(trim($value));
+        $value = str_replace(["'", "\u{2019}"], '', $value);
+
+        return preg_replace('/\s+/', '-', $value) ?? $value;
+    }
+
     /**
      * A normalized tooltip payload for a standalone item (for [item=…] post
      * links). Shaped like the equipment items so the frontend tooltip renderer

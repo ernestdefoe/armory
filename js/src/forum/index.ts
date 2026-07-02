@@ -13,11 +13,14 @@ import Button from 'flarum/common/components/Button';
 import ArmoryPage from './components/ArmoryPage';
 import ArmoryListAvatar from './components/ArmoryListAvatar';
 import ArmoryPostPane from './components/ArmoryPostPane';
+import GuildPage from './components/GuildPage';
 import ItemSearchModal from './components/ItemSearchModal';
 import { processWowItems } from './wowItems';
 
 app.initializers.add('ernestdefoe-armory', () => {
   app.routes['armory'] = { path: '/armory', component: ArmoryPage };
+  app.routes['armory.guildpage'] = { path: '/guild', component: GuildPage };
+  app.routes['armory.guildpage.member'] = { path: '/guild/:realm/:name', component: GuildPage };
 
   const trans = (k: string) => app.translator.trans('ernestdefoe-armory.forum.' + k);
 
@@ -25,6 +28,13 @@ app.initializers.add('ernestdefoe-armory', () => {
   // In Flarum 2 the sidebar nav is IndexSidebar (NOT IndexPage.navItems).
   extend(IndexSidebar.prototype, 'navItems', (items: any) => {
     items.add('armory', LinkButton.component({ icon: 'fab fa-battle-net', href: app.route('armory') }, trans('nav')), -10);
+
+    // The guild roster is public data — show the link to everyone.
+    items.add(
+      'guild',
+      LinkButton.component({ icon: 'fas fa-shield-halved', href: app.route('armory.guildpage') }, trans('guild_nav')),
+      -10.5
+    );
 
     // An Arena link too, when the Arena extension (forumaker/arena) is installed.
     // Arena's page is per-user (their deck builder), so only for signed-in members.

@@ -10,15 +10,16 @@ ernestdefoe-armory:
       hint: Type an item name to search.
       none: No items found.
     pane_level_ilvl: "Level {level} · {ilvl} ilvl"
-    guild_button: Guild roster
-    guild_back: Your characters
-    guild_title: "{guild} — guild roster"
+    guild_nav: Guild
+    guild_page_title: Guild roster
     guild_members: "{count} members"
     guild_rank_master: Guild master
     guild_rank: "Rank {rank}"
     guild_level_short: "Level {level}"
     guild_unavailable: The guild roster is not available yet. An admin can set the guild realm and name in the Armory settings.
-    guild_loading: Summoning the roster…
+    guild_pick_member: Pick a member from the roster to inspect their character.
+    guild_member_error: Could not load this character from Battle.net. They may need to log in to the game once and try again.
+    guild_back_to_roster: Back to the roster
     bnet_only_error: New accounts are created by signing in with Battle.net.
     needs_main_alert: Welcome to the pact — choose your primary character to complete your profile.
     needs_main_cta: Choose now

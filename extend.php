@@ -21,7 +21,9 @@ return [
     (new Extend\Frontend('forum'))
         ->js(__DIR__ . '/js/dist/forum.js')
         ->css(__DIR__ . '/less/forum.less')
-        ->route('/armory', 'armory'),
+        ->route('/armory', 'armory')
+        ->route('/guild', 'armory.guildpage')
+        ->route('/guild/{realm}/{name}', 'armory.guildpage.member'),
 
     (new Extend\Frontend('admin'))
         ->js(__DIR__ . '/js/dist/admin.js'),
@@ -57,6 +59,8 @@ return [
         ->get('/armory/item/{id}', 'armory.item', Controller\ItemController::class)
         ->get('/armory/item-search', 'armory.item.search', Controller\ItemSearchController::class)
         ->get('/armory/guild', 'armory.guild', Controller\GuildRosterController::class)
+        ->get('/armory/lookup/{realm}/{name}', 'armory.lookup', Controller\LookupController::class)
+        ->get('/armory/lookup-extra/{realm}/{name}/{kind}', 'armory.lookup.extra', Controller\LookupExtraController::class)
         ->post('/armory/sync', 'armory.sync', Controller\SyncController::class)
         ->post('/armory/character/{id}/{action}', 'armory.action', Controller\ActionController::class),
 

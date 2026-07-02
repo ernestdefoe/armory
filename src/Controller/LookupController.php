@@ -9,10 +9,10 @@ use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 
 /**
- * The configured guild's full member roster — see Armory::guildRoster()
- * (client credentials, cached an hour, connected-realm aware).
+ * Full character sheet for a GUILD ROSTER member by realm+name (no DB row,
+ * no Battle.net link needed). Membership-gated inside Armory::fullByName().
  */
-class GuildRosterController implements RequestHandlerInterface
+class LookupController implements RequestHandlerInterface
 {
     public function __construct(protected Armory $armory)
     {
@@ -20,12 +20,11 @@ class GuildRosterController implements RequestHandlerInterface
 
     public function handle(ServerRequestInterface $request): ResponseInterface
     {
-        $data = $this->armory->guildRoster();
+        $q = $request->getQueryParams();
 
-        if (! is_array($data)) {
-            return new JsonResponse(['ok' => false, 'error' => 'unavailable']);
-        }
-
-        return new JsonResponse(['ok' => true] + $data);
+        return new JsonResponse($this->armory->fullByName(
+            (string) ($q['realm'] ?? ''),
+            rawurldecode((string) ($q['name'] ?? '')),
+        ));
     }
 }

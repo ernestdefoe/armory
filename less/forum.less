@@ -418,3 +418,96 @@
     cursor: default;
   }
 }
+
+
+// ── /guild — standalone roster page with member click-through ────────────
+.gp-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 4px 6px 10px;
+
+  h2 {
+    margin: 0;
+    font-size: 17px;
+  }
+}
+
+.gp-list {
+  max-height: none;
+
+  li {
+    list-style: none;
+  }
+}
+
+// The rows became buttons (clickable) — reset chrome, keep the grid.
+button.ar-guild-row {
+  width: 100%;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--control-bg);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: background-color 0.15s ease;
+
+  &:hover {
+    background: var(--control-bg);
+  }
+
+  &.on {
+    background: var(--control-bg);
+    box-shadow: inset 2px 0 0 var(--primary-color, #e8c36a);
+  }
+}
+
+.gp-roster {
+  max-height: 75vh;
+  overflow-y: auto;
+
+  // Narrow aside: the class column collides with level, and the class-colored
+  // name already carries that information.
+  .ar-guild-class {
+    display: none;
+  }
+
+  .ar-guild-row {
+    grid-template-columns: minmax(0, 1.4fr) auto auto;
+  }
+}
+
+.gp-loading {
+  padding: 30px 0;
+}
+
+.gp-placeholder .ar-empty i {
+  display: block;
+  font-size: 30px;
+  margin-bottom: 10px;
+  color: var(--muted-color);
+}
+
+.gp-back {
+  flex-shrink: 0;
+  margin-right: 4px;
+}
+
+@media @phone {
+  .GuildPage .ar-wrap {
+    display: block;
+  }
+
+  // One pane at a time on phones: roster OR the selected member.
+  .GuildPage .gp-has-detail ~ *,
+  .GuildPage .ar-wrap.gp-has-detail .gp-roster {
+    display: none;
+  }
+
+  .GuildPage .ar-wrap:not(.gp-has-detail) .ar-detail {
+    display: none;
+  }
+}
