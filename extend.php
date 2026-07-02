@@ -6,9 +6,13 @@
 
 use ErnestDefoe\Armory\ArmoryBattlenetAccount;
 use ErnestDefoe\Armory\ArmoryCharacter;
+use ErnestDefoe\Armory\BlizzardApi;
 use ErnestDefoe\Armory\Controller;
 use ErnestDefoe\Armory\Listener\RequireBattlenetSignUp;
+use ErnestDefoe\Armory\PlayableClasses;
 use Flarum\Api\Context;
+use Flarum\Settings\SettingsRepositoryInterface;
+use Illuminate\Contracts\Cache\Repository as CacheRepository;
 use Flarum\Api\Resource\ForumResource;
 use Flarum\Api\Resource\UserResource;
 use Flarum\Api\Schema\Attribute;
@@ -86,6 +90,56 @@ return [
                     // Fresh social signup whose link completes lazily on the
                     // first armory visit — nudge them there.
                     return $actor->loginProviders()->where('provider', 'battlenet')->exists();
+                }),
+
+            // The guild's "now recruiting" list for the Bespoke widget: parsed
+            // from the admin textarea, each class decorated with its official
+            // Blizzard icon (static media API, cached; null icons when the API
+            // client isn't configured — the widget falls back to colored
+            // crests). Same payload for every visitor.
+            Attribute::make('armoryRecruiting')
+                ->get(function () {
+                    try {
+                        $settings = resolve(SettingsRepositoryInterface::class);
+                        $classes = PlayableClasses::parseRecruiting((string) $settings->get('armory.recruiting'));
+                        if ($classes === []) {
+                            return [];
+                        }
+
+                        $region = (string) $settings->get('armory.region');
+                        $region = in_array($region, ['us', 'eu', 'kr', 'tw'], true) ? $region : 'us';
+
+                        // Whole-catalog icon map, cached a week. Only cached when
+                        // at least one icon resolved — otherwise a pre-credentials
+                        // lookup would pin nulls for 7 days.
+                        $icons = [];
+                        try {
+                            $cache = resolve(CacheRepository::class);
+                            $key = 'armory.class-icons.' . $region;
+                            $icons = $cache->get($key);
+                            if (! is_array($icons)) {
+                                $api = resolve(BlizzardApi::class);
+                                $icons = [];
+                                foreach (PlayableClasses::ALL as $slug => [$id, $name]) {
+                                    $icons[$slug] = $api->playableClassIcon($region, $id);
+                                }
+                                if (array_filter($icons) !== []) {
+                                    $cache->put($key, $icons, 604800);
+                                }
+                            }
+                        } catch (\Throwable $e) {
+                            $icons = [];
+                        }
+
+                        return array_map(fn ($c) => [
+                            'slug' => $c['slug'],
+                            'name' => $c['name'],
+                            'note' => $c['note'],
+                            'icon' => $icons[$c['slug']] ?? null,
+                        ], $classes);
+                    } catch (\Throwable $e) {
+                        return [];
+                    }
                 }),
         ]),
 

@@ -128,6 +128,30 @@ class BlizzardApi
         ]);
     }
 
+    /**
+     * The official icon URL for a playable class (static namespace, client
+     * credentials — no user link needed). Used by the recruiting widget.
+     */
+    public function playableClassIcon(string $region, int $classId): ?string
+    {
+        $token = $this->clientToken();
+        if (! $token) {
+            return null;
+        }
+
+        $media = $this->getJson($this->apiHost($region).'/data/wow/media/playable-class/'.$classId, $token, [
+            'namespace' => "static-{$region}", 'locale' => 'en_US',
+        ]);
+
+        foreach (($media['assets'] ?? []) as $asset) {
+            if (($asset['key'] ?? '') === 'icon' && is_string($asset['value'] ?? null)) {
+                return $asset['value'];
+            }
+        }
+
+        return null;
+    }
+
     public function character(string $r, string $rs, string $n): ?array
     {
         return $this->profileGet($r, $rs, $n, '');

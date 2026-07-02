@@ -15,6 +15,7 @@ import ArmoryListAvatar from './components/ArmoryListAvatar';
 import ArmoryPostPane from './components/ArmoryPostPane';
 import GuildPage from './components/GuildPage';
 import ItemSearchModal from './components/ItemSearchModal';
+import RecruitingWidget from './components/RecruitingWidget';
 import { processWowItems } from './wowItems';
 
 app.initializers.add('ernestdefoe-armory', () => {
@@ -23,6 +24,23 @@ app.initializers.add('ernestdefoe-armory', () => {
   app.routes['armory.guildpage.member'] = { path: '/guild/:realm/:name', component: GuildPage };
 
   const trans = (k: string) => app.translator.trans('ernestdefoe-armory.forum.' + k);
+
+  // Bespoke integration: "Now Recruiting" widget (class cards with official
+  // Blizzard icons). Queue-based registration — Bespoke drains it whenever it
+  // renders, so load order never matters and this is inert without Bespoke.
+  // Labels are full locale keys resolved from OUR locale by Bespoke's inspector.
+  ((window as any).BespokeWidgetQueue = (window as any).BespokeWidgetQueue || []).push({
+    type: 'armory-recruiting',
+    label: 'ernestdefoe-armory.forum.recruiting.widget_name',
+    icon: '⚔️',
+    zones: ['above-list', 'sidebar', 'below-list', 'footer'],
+    schema: [
+      { key: 'title', type: 'text', label: 'ernestdefoe-armory.forum.recruiting.title_label', default: 'Now Recruiting' },
+      { key: 'notes', type: 'toggle', label: 'ernestdefoe-armory.forum.recruiting.notes_label', default: true },
+      { key: 'applyUrl', type: 'text', label: 'ernestdefoe-armory.forum.recruiting.apply_label', default: '' },
+    ],
+    component: RecruitingWidget,
+  });
 
   // Links in the main forum navigation (the index sidebar), where nav links live.
   // In Flarum 2 the sidebar nav is IndexSidebar (NOT IndexPage.navItems).

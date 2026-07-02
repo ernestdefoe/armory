@@ -511,3 +511,92 @@ button.ar-guild-row {
     display: none;
   }
 }
+
+// ─── "Now Recruiting" Bespoke widget ─────────────────────────────────────
+// Class cards: official Blizzard class icon in a class-colored plate +
+// class-colored name + optional note. Sidebar stacks; wide zones (above/
+// below the discussion list) tile into a responsive grid. Colors ride each
+// card's --ar-class (set inline from the class color map).
+
+.ArmoryRecruit-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+[data-bespoke-zone='above-list'] .ArmoryRecruit-list,
+[data-bespoke-zone='below-list'] .ArmoryRecruit-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 12px;
+}
+
+.ArmoryRecruit-card {
+  --ar-class: var(--primary-color);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid ~"color-mix(in srgb, var(--ar-class) 35%, transparent)";
+  background: ~"color-mix(in srgb, var(--ar-class) 7%, transparent)";
+  color: inherit;
+  transition: border-color 0.16s ease, background 0.16s ease, transform 0.16s ease;
+}
+
+a.ArmoryRecruit-card:hover,
+a.ArmoryRecruit-card:focus-visible {
+  text-decoration: none;
+  color: inherit;
+  border-color: var(--ar-class);
+  background: ~"color-mix(in srgb, var(--ar-class) 13%, transparent)";
+  transform: translateY(-1px);
+  outline: none;
+}
+
+.ArmoryRecruit-plate {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 9px;
+  overflow: hidden;
+  border: 1px solid ~"color-mix(in srgb, var(--ar-class) 60%, transparent)";
+  box-shadow: 0 0 10px ~"color-mix(in srgb, var(--ar-class) 30%, transparent)";
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: ~"color-mix(in srgb, var(--ar-class) 18%, transparent)";
+}
+
+.ArmoryRecruit-icon {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.ArmoryRecruit-iconPh {
+  font-weight: 800;
+  font-size: 17px;
+  color: var(--ar-class);
+}
+
+.ArmoryRecruit-meta {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.ArmoryRecruit-name {
+  font-weight: 700;
+  font-size: 13.5px;
+  line-height: 1.25;
+}
+
+.ArmoryRecruit-note {
+  font-size: 11.5px;
+  color: var(--muted-color);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

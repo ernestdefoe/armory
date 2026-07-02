@@ -39,5 +39,11 @@ export const extend = [
       type: 'boolean',
       label: app.translator.trans('ernestdefoe-armory.admin.bnet_only_label'),
       help: app.translator.trans('ernestdefoe-armory.admin.bnet_only_help'),
+    }))
+    .setting(() => ({
+      setting: 'armory.recruiting',
+      type: 'textarea',
+      label: app.translator.trans('ernestdefoe-armory.admin.recruiting_label'),
+      help: app.translator.trans('ernestdefoe-armory.admin.recruiting_help'),
     })),
 ];

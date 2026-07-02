@@ -1,6 +1,12 @@
 ernestdefoe-armory:
   forum:
     nav: Armory
+    recruiting:
+      widget_name: Now Recruiting
+      title_label: Title
+      notes_label: Show notes
+      apply_label: Apply link (URL, optional)
+      empty_hint: No classes are marked as recruiting — add them in the Armory admin settings.
     arena: Arena
     log_in_with_battlenet: Sign in with Battle.net
     item_link_button: Link a WoW item
@@ -28,6 +34,8 @@ ernestdefoe-armory:
     primary_character: Primary character
 
   admin:
+    recruiting_label: Now recruiting (classes)
+    recruiting_help: "One class per line, with an optional note after a colon — e.g. \"shaman: Resto or Elemental\". Valid classes: warrior, paladin, hunter, rogue, priest, death knight, shaman, mage, warlock, monk, druid, demon hunter, evoker. Shown by the Now Recruiting widget in the theme editor."
     client_id: Battle.net Client ID
     client_secret: Battle.net Client Secret
     client_help: "Create an API client at develop.battle.net/access/clients and set its Redirect URL to https://YOUR-FORUM/auth/battlenet/callback. Then paste the id + secret here."
