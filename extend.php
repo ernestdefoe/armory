@@ -130,6 +130,11 @@ return [
     // public armory page already exposes.
     (new Extend\ApiResource(UserResource::class))
         ->fields(function () {
+            // Per-request memo: dedupes the armoryMain lookup across many posts by
+            // the same author in one stream. Safe under Flarum 2's PHP-FPM model
+            // (share-nothing — the container is rebuilt per request, so this
+            // closure and $memo reset each request). If Flarum ever runs under a
+            // persistent worker (Octane/RoadRunner), scope this to the request.
             $memo = [];
 
             return [

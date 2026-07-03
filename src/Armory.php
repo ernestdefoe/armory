@@ -367,6 +367,34 @@ class Armory
         return ['ok' => true, 'found' => $found];
     }
 
+    /**
+     * Cheap synchronous pre-flight for the Sync endpoint — replicates sync()'s
+     * link + token checks WITHOUT any Blizzard call, so the controller can send
+     * the UI straight to re-auth instead of queueing a job that would no-op.
+     * Returns null when a background sync should proceed.
+     */
+    public function syncGate(int $userId): ?array
+    {
+        $acct = ArmoryBattlenetAccount::query()->where('user_id', $userId)->first();
+        $accessToken = $this->decryptToken($acct->access_token ?? null);
+        if (! $acct || ! $accessToken) {
+            return ['ok' => false, 'reason' => 'not_linked'];
+        }
+        if ($acct->token_expires_at && Carbon::parse($acct->token_expires_at)->isPast()) {
+            return ['ok' => false, 'reason' => 'reauth'];
+        }
+
+        return null;
+    }
+
+    /** ISO-8601 timestamp of the member's last completed character sync, or null. */
+    public function lastSyncedAt(int $userId): ?string
+    {
+        $acct = ArmoryBattlenetAccount::query()->where('user_id', $userId)->first();
+
+        return optional($acct)->synced_at?->toIso8601String();
+    }
+
     // ── Full character (cached) + tab blocks ───────────────────────────────
 
     public function full(int $id): array
@@ -945,30 +973,41 @@ class Armory
         );
 
         $cards = $this->classCards((string) $c->class);
-        $this->db->table('rp_cards')->where('user_id', $userId)
-            ->whereIn('name', array_map(fn ($x) => $x['name'], $cards))->delete();
 
-        $mod = (int) floor($ilvl / 40);
-        $equipped = [];
-        foreach ($cards as $card) {
-            $dmg = ! empty($card['damage']) ? $card['damage'].($mod > 0 ? '+'.$mod : '') : null;
-            $equipped[] = $this->db->table('rp_cards')->insertGetId([
-                'user_id' => $userId,
-                'name' => $card['name'],
-                'icon' => $card['icon'],
-                'type' => $card['type'],
-                'description' => $card['desc'] ?? '',
-                'attack_expr' => $card['attack'] ?? null,
-                'damage_expr' => $dmg,
-                'defense' => $card['defense'] ?? 0,
-                'hp' => $card['hp'] ?? 0,
-                'cost' => $card['cost'] ?? 1,
-                'is_public' => false,
-                'created_at' => Carbon::now(),
-                'updated_at' => Carbon::now(),
-            ]);
-        }
-        $this->db->table('rp_sheets')->where('character_id', $charId)->update(['equipped' => json_encode(array_slice($equipped, 0, 6))]);
+        // Atomic deck rebuild across the foreign Role-Play tables: deleting the
+        // old signature cards, inserting the rescaled set, and repointing
+        // rp_sheets.equipped must be all-or-nothing so a mid-insert failure can't
+        // leave a half-rebuilt deck. (rp_cards assumed cols: user_id, name, icon,
+        // type, description, attack_expr, damage_expr, defense, hp, cost,
+        // is_public, timestamps.)
+        $equipped = $this->db->transaction(function () use ($userId, $cards, $ilvl, $charId) {
+            $this->db->table('rp_cards')->where('user_id', $userId)
+                ->whereIn('name', array_map(fn ($x) => $x['name'], $cards))->delete();
+
+            $mod = (int) floor($ilvl / 40);
+            $ids = [];
+            foreach ($cards as $card) {
+                $dmg = ! empty($card['damage']) ? $card['damage'].($mod > 0 ? '+'.$mod : '') : null;
+                $ids[] = $this->db->table('rp_cards')->insertGetId([
+                    'user_id' => $userId,
+                    'name' => $card['name'],
+                    'icon' => $card['icon'],
+                    'type' => $card['type'],
+                    'description' => $card['desc'] ?? '',
+                    'attack_expr' => $card['attack'] ?? null,
+                    'damage_expr' => $dmg,
+                    'defense' => $card['defense'] ?? 0,
+                    'hp' => $card['hp'] ?? 0,
+                    'cost' => $card['cost'] ?? 1,
+                    'is_public' => false,
+                    'created_at' => Carbon::now(),
+                    'updated_at' => Carbon::now(),
+                ]);
+            }
+            $this->db->table('rp_sheets')->where('character_id', $charId)->update(['equipped' => json_encode(array_slice($ids, 0, 6))]);
+
+            return $ids;
+        });
 
         return ['ok' => true, 'cards' => count($equipped), 'character' => $c->name];
     }
@@ -1093,16 +1132,20 @@ class Armory
             ], $now);
         }
 
-        // Rebuild the member's deck from the generated class cards.
-        $this->db->table('arena_decks')->where('user_id', $userId)->delete();
-        $pos = 0;
-        foreach (array_values(array_unique($cardIds)) as $cid) {
-            $this->db->table('arena_decks')->insert([
-                'user_id' => $userId,
-                'card_id' => $cid,
-                'position' => $pos++,
-            ]);
-        }
+        // Rebuild the member's deck from the generated class cards. Atomic so a
+        // mid-insert failure can't leave a partial deck. (arena_decks assumed
+        // cols: user_id, card_id, position.)
+        $this->db->transaction(function () use ($userId, $cardIds) {
+            $this->db->table('arena_decks')->where('user_id', $userId)->delete();
+            $pos = 0;
+            foreach (array_values(array_unique($cardIds)) as $cid) {
+                $this->db->table('arena_decks')->insert([
+                    'user_id' => $userId,
+                    'card_id' => $cid,
+                    'position' => $pos++,
+                ]);
+            }
+        });
 
         // Scale HP/mana from gear (gentle — keeps PvP balanced): defaults 15/20.
         $stats = $this->full($id)['stats'] ?? [];

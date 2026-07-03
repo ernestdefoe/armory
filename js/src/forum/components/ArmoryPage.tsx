@@ -128,15 +128,23 @@ export default class ArmoryPage extends Page {
     this.syncing = true;
     this.req('/armory/sync', 'POST')
       .then((r: any) => {
-        if (r && r.ok) {
-          this.boot();
-          return;
-        }
         // Token expired / not linked: re-authenticate with Battle.net so we can
         // re-list the account and pick up newly created characters. The callback
         // re-syncs automatically with the fresh token.
         if (r && (r.reason === 'reauth' || r.reason === 'not_linked' || r.reason === 'profile_unavailable')) {
           window.location.href = app.forum.attribute('baseUrl') + '/auth/battlenet';
+          return;
+        }
+        // The sync now runs in the background (queued so ~60 Blizzard calls never
+        // block a web worker). Poll /armory/me until the account's synced_at
+        // advances past its pre-sync value, then reload the freshly synced roster.
+        if (r && r.queued) {
+          this.pollSync(r.since ?? null, 0);
+          return;
+        }
+        // Legacy synchronous backend (pre-queue): reload immediately.
+        if (r && r.ok) {
+          this.boot();
           return;
         }
         this.syncing = false;
@@ -146,6 +154,28 @@ export default class ArmoryPage extends Page {
         this.syncing = false;
         m.redraw();
       });
+  }
+
+  private pollSync(prevSyncedAt: string | null, attempt: number) {
+    // Give the background job time to finish, but never spin forever: after
+    // ~45s (15 × 3s) just reload whatever is there.
+    if (attempt >= 15) {
+      this.syncing = false;
+      this.boot();
+      return;
+    }
+    setTimeout(() => {
+      this.req('/armory/me')
+        .then((s: any) => {
+          if (s && s.synced_at && s.synced_at !== prevSyncedAt) {
+            this.syncing = false;
+            this.boot();
+          } else {
+            this.pollSync(prevSyncedAt, attempt + 1);
+          }
+        })
+        .catch(() => this.pollSync(prevSyncedAt, attempt + 1));
+    }, 3000);
   }
 
   doImport(action: string) {
