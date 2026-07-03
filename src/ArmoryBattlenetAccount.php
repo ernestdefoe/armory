@@ -24,6 +24,12 @@ class ArmoryBattlenetAccount extends AbstractModel
 {
     protected $table = 'armory_battlenet_accounts';
 
+    // Internal model: every attribute is populated server-side from the OAuth
+    // token exchange / Battle.net userinfo, never from raw request input, so
+    // mass assignment is safe. Explicit because Flarum/Laravel core no longer
+    // globally unguards models — without this, updateOrCreate() throws.
+    protected $guarded = [];
+
     public $timestamps = true;
 
     protected $casts = [

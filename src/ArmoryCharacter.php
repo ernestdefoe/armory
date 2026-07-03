@@ -31,6 +31,12 @@ class ArmoryCharacter extends AbstractModel
 {
     protected $table = 'armory_characters';
 
+    // Internal model: attributes are populated server-side from Blizzard API
+    // responses, never from raw request input, so mass assignment is safe.
+    // Explicit because Flarum/Laravel core no longer globally unguards models —
+    // without this, create()/updateOrCreate()/update() throw.
+    protected $guarded = [];
+
     // This table has created_at/updated_at columns; let Eloquent manage them.
     public $timestamps = true;
 
