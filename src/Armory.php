@@ -1281,6 +1281,106 @@ class Armory
         ];
     }
 
+    /**
+     * Intra-guild Mythic+ leaderboard from linked, visible characters:
+     * current season rating per character (Blizzard mythic-keystone-profile,
+     * cached 6h each) plus the change since the weekly reset (snapshot
+     * rotated into `armory.mplus_snapshot` on the first build of each
+     * week). Whole board cached 30 minutes.
+     */
+    public function mplusLeaderboard(): array
+    {
+        $cached = $this->cache?->get('armory.mplus.board');
+        if (is_array($cached)) {
+            return $cached;
+        }
+
+        $chars = $this->db->table('armory_characters')
+            ->join('users', 'users.id', '=', 'armory_characters.user_id')
+            ->where('armory_characters.is_visible', true)
+            ->orderByDesc('armory_characters.is_main')
+            ->orderByDesc('armory_characters.item_level')
+            ->limit(60)
+            ->get([
+                'armory_characters.id', 'armory_characters.user_id', 'armory_characters.name',
+                'armory_characters.realm_slug', 'armory_characters.region',
+                'armory_characters.class', 'armory_characters.spec',
+                'users.username', 'users.avatar_url',
+            ]);
+
+        $rows = [];
+        foreach ($chars as $ch) {
+            $key = 'armory.mplus.char.'.$ch->id;
+            $rating = $this->cache?->get($key);
+            if (! is_numeric($rating)) {
+                $mk = $this->api->mythicKeystone(
+                    $ch->region ?: $this->api->region(),
+                    (string) $ch->realm_slug,
+                    mb_strtolower((string) $ch->name)
+                );
+                $rating = (float) ($mk['current_mythic_rating']['rating'] ?? 0);
+                $this->cache?->put($key, $rating, 6 * 3600);
+            }
+            $rating = round((float) $rating, 1);
+            if ($rating <= 0) {
+                continue;
+            }
+
+            $rows[] = [
+                'charId' => (int) $ch->id,
+                'name' => (string) $ch->name,
+                'class' => (string) ($ch->class ?? ''),
+                'spec' => (string) ($ch->spec ?? ''),
+                'realm' => (string) $ch->realm_slug,
+                'userId' => (int) $ch->user_id,
+                'username' => (string) $ch->username,
+                'avatarUrl' => $ch->avatar_url ? (string) $ch->avatar_url : null,
+                'rating' => $rating,
+            ];
+        }
+
+        usort($rows, fn ($a, $b) => $b['rating'] <=> $a['rating']);
+        $rows = array_slice($rows, 0, 50);
+        $rows = $this->applyMplusDeltas($rows);
+
+        $this->cache?->put('armory.mplus.board', $rows, 1800);
+
+        return $rows;
+    }
+
+    /** Weekly deltas vs the snapshot taken on the first build after each reset. */
+    protected function applyMplusDeltas(array $rows): array
+    {
+        $resets = [
+            'us' => [Carbon::TUESDAY, 15],
+            'eu' => [Carbon::WEDNESDAY, 7],
+            'kr' => [Carbon::WEDNESDAY, 7],
+            'tw' => [Carbon::WEDNESDAY, 7],
+        ];
+        [$day, $hour] = $resets[$this->api->region()] ?? $resets['us'];
+        $reset = Carbon::now('UTC')->startOfDay()->setTime($hour, 0);
+        while ($reset->dayOfWeek !== $day || $reset->gt(Carbon::now('UTC'))) {
+            $reset->subDay()->setTime($hour, 0);
+        }
+        $resetKey = $reset->format('Y-m-d');
+
+        $snap = json_decode((string) $this->settings->get('armory.mplus_snapshot'), true);
+        if (! is_array($snap) || ($snap['key'] ?? '') !== $resetKey) {
+            $snap = ['key' => $resetKey, 'ratings' => []];
+            foreach ($rows as $r) {
+                $snap['ratings'][(string) $r['charId']] = $r['rating'];
+            }
+            $this->settings->set('armory.mplus_snapshot', json_encode($snap));
+        }
+
+        foreach ($rows as &$r) {
+            $base = $snap['ratings'][(string) $r['charId']] ?? null;
+            $r['delta'] = is_numeric($base) ? round($r['rating'] - (float) $base, 1) : 0.0;
+        }
+
+        return $rows;
+    }
+
     /** Shared filler cards that top a class's signature cards up to a full 20-card deck (10 elemental + 10 bonus). */
     private function arenaFillerCards(): array
     {

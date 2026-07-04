@@ -82,6 +82,7 @@ return [
         ->get('/armory/item/{id}', 'armory.item', Controller\ItemController::class)
         ->get('/armory/item-search', 'armory.item.search', Controller\ItemSearchController::class)
         ->get('/armory/guild', 'armory.guild', Controller\GuildRosterController::class)
+        ->get('/armory/guild/mplus', 'armory.guild.mplus', Controller\MplusLeaderboardController::class)
         ->post('/armory/guild/refresh', 'armory.guild.refresh', Controller\GuildRefreshController::class)
         ->get('/armory/lookup/{realm}/{name}', 'armory.lookup', Controller\LookupController::class)
         ->get('/armory/lookup-extra/{realm}/{name}/{kind}', 'armory.lookup.extra', Controller\LookupExtraController::class)

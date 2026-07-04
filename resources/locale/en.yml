@@ -26,6 +26,10 @@ ernestdefoe-armory:
     guild_level_short: "Level {level}"
     guild_unavailable: The guild roster is not available yet. An admin can set the guild realm and name in the Armory settings.
     guild_pick_member: Pick a member from the roster to inspect their character.
+    mplus_title: Mythic+ Leaderboard
+    mplus_climber: "Biggest climber this week: {name} ({delta})"
+    mplus_empty: The Mythic+ leaderboard appears once members link characters with a season rating.
+    mplus_foot: Ratings from Battle.net for linked characters, refreshed every few hours. Change is since the weekly reset.
     guild_member_error: Could not load this character from Battle.net. They may need to log in to the game once and try again.
     guild_back_to_roster: Back to the roster
     bnet_only_error: New accounts are created by signing in with Battle.net.

@@ -14,6 +14,8 @@ export default class GuildPage extends Page {
   loading = true;
   refreshing = false;
   roster: any = null;
+  board: any[] | null = null;
+  boardLoading = true;
   selected: { realm: string; name: string } | null = null;
   D: any = null;
   detailLoading = false;
@@ -34,6 +36,18 @@ export default class GuildPage extends Page {
       .catch(() => {
         this.roster = false;
         this.loading = false;
+        m.redraw();
+      });
+
+    this.req('/armory/guild/mplus')
+      .then((r: any) => {
+        this.board = r && r.ok && Array.isArray(r.board) ? r.board : [];
+        this.boardLoading = false;
+        m.redraw();
+      })
+      .catch(() => {
+        this.board = [];
+        this.boardLoading = false;
         m.redraw();
       });
 
@@ -169,14 +183,7 @@ export default class GuildPage extends Page {
 
   detailView() {
     if (!this.selected) {
-      return (
-        <div className="ar-hero gp-placeholder">
-          <div className="ar-empty">
-            <i className="fas fa-shield-halved" aria-hidden="true" />
-            <p>{this.t('guild_pick_member')}</p>
-          </div>
-        </div>
-      );
+      return <div className="ar-hero gp-placeholder">{this.mplusView()}</div>;
     }
     if (this.detailLoading) return <div className="ar-hero"><div className="ar-empty"><LoadingIndicator /></div></div>;
     if (this.detailError || !this.D) return <div className="ar-hero"><div className="ar-empty">{this.t('guild_member_error')}</div></div>;
@@ -208,6 +215,56 @@ export default class GuildPage extends Page {
         <div className="ar-tabbody" oncreate={(v: any) => this.wireTips(v.dom)} onupdate={(v: any) => this.wireTips(v.dom)}>
           {m.trust(this.tabContent())}
         </div>
+      </div>
+    );
+  }
+
+  mplusView() {
+    if (this.boardLoading) return <div className="ar-empty"><LoadingIndicator /></div>;
+
+    if (!this.board || !this.board.length) {
+      return (
+        <div className="ar-empty">
+          <i className="fas fa-shield-halved" aria-hidden="true" />
+          <p>{this.t('guild_pick_member')}</p>
+          <p className="gp-mplus-empty">{this.t('mplus_empty')}</p>
+        </div>
+      );
+    }
+
+    const climber = this.board.reduce(
+      (best: any, r: any) => ((r.delta || 0) > 0 && (!best || r.delta > best.delta) ? r : best),
+      null
+    );
+
+    return (
+      <div className="gp-mplus">
+        <h3 className="gp-mplus-title">
+          <i className="fas fa-ranking-star" aria-hidden="true" /> {this.t('mplus_title')}
+        </h3>
+        {climber ? (
+          <div className="gp-mplus-climber">
+            📈 {this.t('mplus_climber', { name: climber.name, delta: '+' + climber.delta })}
+          </div>
+        ) : null}
+        <ol className="gp-mplus-list">
+          {this.board.map((r: any, i: number) => (
+            <li>
+              <button type="button" className="gp-mplus-row" onclick={() => this.loadMember(r.realm, r.name)}>
+                <span className="gp-mplus-rank">{i + 1}</span>
+                <span className="gp-mplus-char">
+                  <b style={{ color: cc(r.class || '') }}>{r.name}</b>
+                  <small>{(r.spec ? r.spec + ' ' : '') + (r.class || '')} · {r.username}</small>
+                </span>
+                <span className="gp-mplus-rating">{Math.round(r.rating)}</span>
+                <span className={'gp-mplus-delta' + (r.delta > 0 ? ' up' : r.delta < 0 ? ' down' : '')}>
+                  {r.delta > 0 ? '▲ +' + r.delta : r.delta < 0 ? '▼ ' + r.delta : '—'}
+                </span>
+              </button>
+            </li>
+          ))}
+        </ol>
+        <p className="gp-mplus-foot">{this.t('mplus_foot')}</p>
       </div>
     );
   }
