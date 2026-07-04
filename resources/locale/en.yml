@@ -62,6 +62,10 @@ ernestdefoe-armory:
     wcl_client_secret_label: Warcraft Logs client secret
     recap_tag_label: Raid recap tag (slug)
     recap_tag_help: The tag recap threads are posted under. Leave blank to reuse the briefing tag.
+    news_label: Post first-kill news threads
+    news_help: "When a boss falls for the first time on a difficulty, a hype thread is posted from the Battle.net guild activity feed (checked hourly). Enabling seeds silently from the current feed, so old kills don't flood the forum. Run `php flarum armory:guild-news` to check right now."
+    news_tag_label: Guild news tag (slug)
+    news_tag_help: The tag first-kill threads are posted under. Leave blank to reuse the briefing tag.
 
   calendar:
     dmf_title: "🎪 Darkmoon Faire"
@@ -83,6 +87,14 @@ ernestdefoe-armory:
     token_heading: "WoW Token"
     token_price: "Currently **{gold} gold**."
     footer: "This briefing is posted automatically each reset. Data: Battle.net, Raider.IO and the guild calendar."
+
+  news:
+    kill_title: "⚔️ First Kill: {boss}!"
+    kill_title_mode: "⚔️ First Kill: {boss} ({mode})!"
+    kill_intro: "**{boss}** ({mode}) has fallen to **{guild}** — first recorded kill, {date}!"
+    kill_body: "Massive congratulations to everyone on the roster. Drop your screenshots, clips and war stories below. 🎉"
+    mode_unknown: "Raid"
+    footer: "Posted automatically from the guild activity feed."
 
   recap:
     title: "📜 Raid Recap — {zone} — {date}"
