@@ -16,6 +16,7 @@ export default class GuildPage extends Page {
   roster: any = null;
   board: any[] | null = null;
   boardLoading = true;
+  progression: any[] | null = null;
   selected: { realm: string; name: string } | null = null;
   D: any = null;
   detailLoading = false;
@@ -37,6 +38,15 @@ export default class GuildPage extends Page {
         this.roster = false;
         this.loading = false;
         m.redraw();
+      });
+
+    this.req('/armory/guild/progression')
+      .then((r: any) => {
+        this.progression = r && r.ok && Array.isArray(r.instances) ? r.instances : [];
+        m.redraw();
+      })
+      .catch(() => {
+        this.progression = [];
       });
 
     this.req('/armory/guild/mplus')
@@ -131,11 +141,43 @@ export default class GuildPage extends Page {
     return (
       <div className="GuildPage ArmoryPage">
         <div className="container">
+          {this.progressionBanner()}
           <div className={'ar-wrap' + (this.selected ? ' gp-has-detail' : '')}>
             <aside className="ar-roster gp-roster">{this.rosterView()}</aside>
             <section className="ar-detail">{this.detailView()}</section>
           </div>
         </div>
+      </div>
+    );
+  }
+
+  progressionBanner() {
+    if (!this.progression || !this.progression.length) return null;
+
+    // Current tier last in the payload; show it first, plus one previous
+    // instance when it has any kills.
+    const shown = this.progression
+      .slice()
+      .reverse()
+      .filter((inst: any, i: number) => i === 0 || inst.modes.some((mo: any) => mo.done > 0))
+      .slice(0, 2);
+
+    return (
+      <div className="gp-prog">
+        {shown.map((inst: any) => (
+          <div className="gp-prog-raid">
+            <span className="gp-prog-name">{inst.name}</span>
+            <span className="gp-prog-modes">
+              {inst.modes
+                .filter((mo: any) => mo.total > 0)
+                .map((mo: any) => (
+                  <span className={'gp-prog-mode' + (mo.done >= mo.total && mo.total > 0 ? ' full' : mo.done > 0 ? ' part' : '')}>
+                    {mo.done}/{mo.total} {String(mo.diff).replace('Raid Finder', 'LFR')[0] === 'L' ? 'LFR' : String(mo.diff)[0]}
+                  </span>
+                ))}
+            </span>
+          </div>
+        ))}
       </div>
     );
   }

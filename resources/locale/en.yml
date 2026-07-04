@@ -82,6 +82,14 @@ ernestdefoe-armory:
     news_help: "When a boss falls for the first time on a difficulty, a hype thread is posted from the Battle.net guild activity feed (checked hourly). Enabling seeds silently from the current feed, so old kills don't flood the forum. Run `php flarum armory:guild-news` to check right now."
     news_tag_label: Guild news tag (slug)
     news_tag_help: The tag first-kill threads are posted under. Leave blank to reuse the briefing tag.
+    patchnotes_label: Post WoW hotfixes & patch notes
+    patchnotes_help: "Auto-posts hotfix and patch-note articles from the Wowhead news feed (checked every six hours; general news never posts). Enabling seeds silently so old articles don't flood the forum. Run `php flarum armory:patch-notes` to check now."
+    patchnotes_tag_label: Patch notes tag (slug)
+    patchnotes_tag_help: Leave blank to reuse the guild news / briefing tag.
+    strategy_label: Create boss strategy hubs
+    strategy_help: "One scaffolded thread per boss of the guild's current raid (overview, assignments, logs sections), so strategy talk has a predictable home. Bosses come from linked characters' raid data; checked daily, at most two threads per run. Run `php flarum armory:strategy-hubs` to create them now."
+    strategy_tag_label: Strategy tag (slug)
+    strategy_tag_help: Leave blank to reuse the briefing tag.
 
   calendar:
     dmf_title: "🎪 Darkmoon Faire"
@@ -113,6 +121,21 @@ ernestdefoe-armory:
     kill_body: "Massive congratulations to everyone on the roster. Drop your screenshots, clips and war stories below. 🎉"
     mode_unknown: "Raid"
     footer: "Posted automatically from the guild activity feed."
+
+  patchnotes:
+    read_more: "Read the full article →"
+    footer: "Posted automatically from the Wowhead news feed."
+
+  strategy:
+    title: "🗡️ {boss} — {raid} Strategy"
+    intro: "The strategy hub for **{boss}** in **{raid}**. Assignments, notes and vods live here — keep it current between pulls."
+    overview_heading: "Overview"
+    overview_body: "Drop the fight summary and key mechanics here. [Guides & ability details on Wowhead]({url})."
+    assignments_heading: "Assignments"
+    assignments_body: "Interrupt order, defensive rotations, positioning — raid leads edit this section before raid night."
+    logs_heading: "Logs & vods"
+    logs_body: "Link the night's Warcraft Logs report and any POV recordings below."
+    footer: "Created automatically for the current raid. This thread is yours — edit away."
 
   recap:
     title: "📜 Raid Recap — {zone} — {date}"

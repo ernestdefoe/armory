@@ -46,7 +46,11 @@ return [
         ->command(ErnestDefoe\Armory\Console\RaidRecapCommand::class)
         ->schedule('armory:raid-recap', fn (Illuminate\Console\Scheduling\Event $e) => $e->hourly())
         ->command(ErnestDefoe\Armory\Console\GuildNewsCommand::class)
-        ->schedule('armory:guild-news', fn (Illuminate\Console\Scheduling\Event $e) => $e->hourly()),
+        ->schedule('armory:guild-news', fn (Illuminate\Console\Scheduling\Event $e) => $e->hourly())
+        ->command(ErnestDefoe\Armory\Console\PatchNotesCommand::class)
+        ->schedule('armory:patch-notes', fn (Illuminate\Console\Scheduling\Event $e) => $e->everySixHours())
+        ->command(ErnestDefoe\Armory\Console\StrategyHubsCommand::class)
+        ->schedule('armory:strategy-hubs', fn (Illuminate\Console\Scheduling\Event $e) => $e->daily()),
 
     // Tell the frontend whether Battle.net sign-in is available (so the social
     // login button only shows once an admin has configured the API client).
@@ -57,6 +61,8 @@ return [
         ->default('armory.calendar_sync_enabled', false)
         ->default('armory.wcl_enabled', false)
         ->default('armory.news_enabled', false)
+        ->default('armory.patchnotes_enabled', false)
+        ->default('armory.strategy_enabled', false)
         ->serializeToForum('armory.configured', 'armory.client_id', fn ($v) => trim((string) $v) !== '')
         ->serializeToForum('armory.region', 'armory.region', fn ($v) => in_array($v, ['us', 'eu', 'kr', 'tw'], true) ? $v : 'us')
         ->serializeToForum('armory.bnetOnly', 'armory.bnet_only', fn ($v) => (bool) (int) $v),
@@ -84,6 +90,7 @@ return [
         ->get('/armory/item-search', 'armory.item.search', Controller\ItemSearchController::class)
         ->get('/armory/guild', 'armory.guild', Controller\GuildRosterController::class)
         ->get('/armory/guild/mplus', 'armory.guild.mplus', Controller\MplusLeaderboardController::class)
+        ->get('/armory/guild/progression', 'armory.guild.progression', Controller\GuildProgressionController::class)
         ->get('/armory/crafting', 'armory.crafting', Controller\CraftingDirectoryController::class)
         ->get('/armory/crafting/search', 'armory.crafting.search', Controller\CraftingSearchController::class)
         ->get('/armory/token', 'armory.token', Controller\TokenController::class)

@@ -702,3 +702,19 @@ a.ArmoryRecruit-card:focus-visible {
   color: var(--primary-color); opacity: .85;
 }
 .ArmoryToken-foot { margin: 8px 0 0; font-size: 11px; color: var(--muted-color); }
+
+/* --- /guild: progression banner --- */
+.gp-prog {
+  display: flex; flex-wrap: wrap; gap: 10px 22px; align-items: center;
+  padding: 12px 16px; margin-bottom: 14px; border-radius: 12px;
+  background: var(--control-bg);
+}
+.gp-prog-raid { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.gp-prog-name { font-weight: 800; font-size: 14px; }
+.gp-prog-modes { display: inline-flex; gap: 6px; }
+.gp-prog-mode {
+  font-size: 12px; font-weight: 700; padding: 3px 9px; border-radius: 999px;
+  background: var(--body-bg); color: var(--muted-color);
+  &.part { color: var(--text-color); }
+  &.full { background: #38b26e; color: #fff; }
+}
