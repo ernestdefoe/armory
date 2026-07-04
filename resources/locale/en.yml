@@ -30,6 +30,12 @@ ernestdefoe-armory:
     mplus_climber: "Biggest climber this week: {name} ({delta})"
     mplus_empty: The Mythic+ leaderboard appears once members link characters with a season rating.
     mplus_foot: Ratings from Battle.net for linked characters, refreshed every few hours. Change is since the weekly reset.
+    crafting_nav: Crafting
+    crafting_title: Crafting directory
+    crafting_sub: Who can craft what — professions and known recipes from every linked character. Click a crafter to view their character, or their member name to visit their profile and send a request.
+    crafting_search_placeholder: Search a recipe — e.g. Flask, Enchant Weapon, feast…
+    crafting_empty: No crafters yet. The directory fills in as members connect Battle.net and their characters sync.
+    crafting_no_results: "No guild crafter knows a recipe matching “{query}” yet."
     guild_member_error: Could not load this character from Battle.net. They may need to log in to the game once and try again.
     guild_back_to_roster: Back to the roster
     bnet_only_error: New accounts are created by signing in with Battle.net.

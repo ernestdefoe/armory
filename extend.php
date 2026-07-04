@@ -26,7 +26,8 @@ return [
         ->css(__DIR__ . '/less/forum.less')
         ->route('/armory', 'armory')
         ->route('/guild', 'armory.guildpage')
-        ->route('/guild/{realm}/{name}', 'armory.guildpage.member'),
+        ->route('/guild/{realm}/{name}', 'armory.guildpage.member')
+        ->route('/crafting', 'armory.crafting.page'),
 
     (new Extend\Frontend('admin'))
         ->js(__DIR__ . '/js/dist/admin.js')
@@ -83,6 +84,8 @@ return [
         ->get('/armory/item-search', 'armory.item.search', Controller\ItemSearchController::class)
         ->get('/armory/guild', 'armory.guild', Controller\GuildRosterController::class)
         ->get('/armory/guild/mplus', 'armory.guild.mplus', Controller\MplusLeaderboardController::class)
+        ->get('/armory/crafting', 'armory.crafting', Controller\CraftingDirectoryController::class)
+        ->get('/armory/crafting/search', 'armory.crafting.search', Controller\CraftingSearchController::class)
         ->post('/armory/guild/refresh', 'armory.guild.refresh', Controller\GuildRefreshController::class)
         ->get('/armory/lookup/{realm}/{name}', 'armory.lookup', Controller\LookupController::class)
         ->get('/armory/lookup-extra/{realm}/{name}/{kind}', 'armory.lookup.extra', Controller\LookupExtraController::class)

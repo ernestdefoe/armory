@@ -14,6 +14,7 @@ import ArmoryPage from './components/ArmoryPage';
 import ArmoryListAvatar from './components/ArmoryListAvatar';
 import ArmoryPostPane from './components/ArmoryPostPane';
 import GuildPage from './components/GuildPage';
+import CraftingPage from './components/CraftingPage';
 import ItemSearchModal from './components/ItemSearchModal';
 import RecruitingWidget from './components/RecruitingWidget';
 import { processWowItems } from './wowItems';
@@ -22,6 +23,7 @@ app.initializers.add('ernestdefoe-armory', () => {
   app.routes['armory'] = { path: '/armory', component: ArmoryPage };
   app.routes['armory.guildpage'] = { path: '/guild', component: GuildPage };
   app.routes['armory.guildpage.member'] = { path: '/guild/:realm/:name', component: GuildPage };
+  app.routes['armory.crafting.page'] = { path: '/crafting', component: CraftingPage };
 
   // Blizzard's render CDN occasionally 500s on freshly released item/character
   // media (cross-origin failures also surface as a "CORS" console error). Swap
@@ -72,6 +74,12 @@ app.initializers.add('ernestdefoe-armory', () => {
       'guild',
       LinkButton.component({ icon: 'fas fa-shield-halved', href: app.route('armory.guildpage') }, trans('guild_nav')),
       -10.5
+    );
+
+    items.add(
+      'crafting',
+      LinkButton.component({ icon: 'fas fa-hammer', href: app.route('armory.crafting.page') }, trans('crafting_nav')),
+      -10.6
     );
 
     // An Arena link too, when the Arena extension (forumaker/arena) is installed.
