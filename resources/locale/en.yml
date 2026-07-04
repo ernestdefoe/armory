@@ -55,6 +55,13 @@ ernestdefoe-armory:
     briefing_pin_label: Pin the latest briefing (unpins the previous one)
     calendar_sync_label: Auto-populate the calendar with WoW events
     calendar_sync_help: "Adds upcoming Darkmoon Faire weeks and weekly resets to the ernestdefoe/calendar extension (needs it installed). Insert-only: edit or delete any generated event and it stays that way. Run `php flarum armory:calendar-sync` to fill it right now."
+    wcl_label: Post raid recaps from Warcraft Logs
+    wcl_help: "After each raid night, a recap thread is posted from the guild's latest public Warcraft Logs report: boss kills and wipes with best pulls, the night's top parses and a link to the full log. Checked hourly; run `php flarum armory:raid-recap` to post one right now."
+    wcl_client_id_label: Warcraft Logs client ID
+    wcl_client_id_help: "Create a free API client at warcraftlogs.com/api/clients — only the guild's public reports are read."
+    wcl_client_secret_label: Warcraft Logs client secret
+    recap_tag_label: Raid recap tag (slug)
+    recap_tag_help: The tag recap threads are posted under. Leave blank to reuse the briefing tag.
 
   calendar:
     dmf_title: "🎪 Darkmoon Faire"
@@ -76,3 +83,14 @@ ernestdefoe-armory:
     token_heading: "WoW Token"
     token_price: "Currently **{gold} gold**."
     footer: "This briefing is posted automatically each reset. Data: Battle.net, Raider.IO and the guild calendar."
+
+  recap:
+    title: "📜 Raid Recap — {zone} — {date}"
+    intro: "**{zone}** · {date} · {duration} in the instance. Here's how the night went."
+    unknown_zone: Raid
+    bosses_heading: "Bosses"
+    boss_kill: "{boss} — down in {pulls, plural, one {# pull} other {# pulls}}"
+    boss_wipe: "{boss} — {pulls, plural, one {# wipe} other {# wipes}}, best pull {best}%"
+    parses_heading: "Top parses of the night"
+    report_link: "View the full report on Warcraft Logs →"
+    footer: "Posted automatically after each logged raid. Data: Warcraft Logs."

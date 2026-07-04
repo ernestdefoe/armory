@@ -69,6 +69,29 @@ export const extend = [
       label: app.translator.trans('ernestdefoe-armory.admin.calendar_sync_label'),
       help: app.translator.trans('ernestdefoe-armory.admin.calendar_sync_help'),
     }))
+    .setting(() => ({
+      setting: 'armory.wcl_enabled',
+      type: 'boolean',
+      label: app.translator.trans('ernestdefoe-armory.admin.wcl_label'),
+      help: app.translator.trans('ernestdefoe-armory.admin.wcl_help'),
+    }))
+    .setting(() => ({
+      setting: 'armory.wcl_client_id',
+      type: 'text',
+      label: app.translator.trans('ernestdefoe-armory.admin.wcl_client_id_label'),
+      help: app.translator.trans('ernestdefoe-armory.admin.wcl_client_id_help'),
+    }))
+    .setting(() => ({
+      setting: 'armory.wcl_client_secret',
+      type: 'text',
+      label: app.translator.trans('ernestdefoe-armory.admin.wcl_client_secret_label'),
+    }))
+    .setting(() => ({
+      setting: 'armory.recap_tag_slug',
+      type: 'text',
+      label: app.translator.trans('ernestdefoe-armory.admin.recap_tag_label'),
+      help: app.translator.trans('ernestdefoe-armory.admin.recap_tag_help'),
+    }))
     // Custom control: checkbox per class with the official Blizzard icon +
     // per-class note. customSetting (NOT setting — that one is invoked at boot
     // expecting a descriptor) defers the call to the page render, where `this`

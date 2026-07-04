@@ -41,7 +41,9 @@ return [
         ->command(ErnestDefoe\Armory\Console\BriefingCommand::class)
         ->schedule('armory:briefing', fn (Illuminate\Console\Scheduling\Event $e) => $e->hourly())
         ->command(ErnestDefoe\Armory\Console\CalendarSyncCommand::class)
-        ->schedule('armory:calendar-sync', fn (Illuminate\Console\Scheduling\Event $e) => $e->daily()),
+        ->schedule('armory:calendar-sync', fn (Illuminate\Console\Scheduling\Event $e) => $e->daily())
+        ->command(ErnestDefoe\Armory\Console\RaidRecapCommand::class)
+        ->schedule('armory:raid-recap', fn (Illuminate\Console\Scheduling\Event $e) => $e->hourly()),
 
     // Tell the frontend whether Battle.net sign-in is available (so the social
     // login button only shows once an admin has configured the API client).
@@ -50,6 +52,7 @@ return [
         ->default('armory.briefing_enabled', false)
         ->default('armory.briefing_pin', true)
         ->default('armory.calendar_sync_enabled', false)
+        ->default('armory.wcl_enabled', false)
         ->serializeToForum('armory.configured', 'armory.client_id', fn ($v) => trim((string) $v) !== '')
         ->serializeToForum('armory.region', 'armory.region', fn ($v) => in_array($v, ['us', 'eu', 'kr', 'tw'], true) ? $v : 'us')
         ->serializeToForum('armory.bnetOnly', 'armory.bnet_only', fn ($v) => (bool) (int) $v),
