@@ -53,6 +53,14 @@ ernestdefoe-armory:
     briefing_tag_label: Briefing tag (slug)
     briefing_tag_help: "The tag new briefings are posted under, e.g. guild-news. Leave blank for no tag."
     briefing_pin_label: Pin the latest briefing (unpins the previous one)
+    calendar_sync_label: Auto-populate the calendar with WoW events
+    calendar_sync_help: "Adds upcoming Darkmoon Faire weeks and weekly resets to the ernestdefoe/calendar extension (needs it installed). Insert-only: edit or delete any generated event and it stays that way. Run `php flarum armory:calendar-sync` to fill it right now."
+
+  calendar:
+    dmf_title: "🎪 Darkmoon Faire"
+    dmf_description: "The Darkmoon Faire is open on Darkmoon Island all week — monthly profession quests, the carousel buff, pet battles and prize tickets."
+    reset_title: "🔄 Weekly Reset"
+    reset_description: "Weekly lockouts, vault rewards and quests reset."
 
   briefing:
     title: "⚔️ This Week in the Pact — {date}"

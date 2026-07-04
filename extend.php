@@ -35,10 +35,13 @@ return [
     new Extend\Locales(__DIR__ . '/resources/locale'),
 
     // Weekly "This Week in the Pact" briefing: the scheduler checks hourly and
-    // posts on the first tick after the regional weekly reset.
+    // posts on the first tick after the regional weekly reset. The calendar
+    // sync tops up upcoming Darkmoon Faire + weekly-reset events daily.
     (new Extend\Console())
         ->command(ErnestDefoe\Armory\Console\BriefingCommand::class)
-        ->schedule('armory:briefing', fn (Illuminate\Console\Scheduling\Event $e) => $e->hourly()),
+        ->schedule('armory:briefing', fn (Illuminate\Console\Scheduling\Event $e) => $e->hourly())
+        ->command(ErnestDefoe\Armory\Console\CalendarSyncCommand::class)
+        ->schedule('armory:calendar-sync', fn (Illuminate\Console\Scheduling\Event $e) => $e->daily()),
 
     // Tell the frontend whether Battle.net sign-in is available (so the social
     // login button only shows once an admin has configured the API client).
@@ -46,6 +49,7 @@ return [
         ->default('armory.bnet_only', false)
         ->default('armory.briefing_enabled', false)
         ->default('armory.briefing_pin', true)
+        ->default('armory.calendar_sync_enabled', false)
         ->serializeToForum('armory.configured', 'armory.client_id', fn ($v) => trim((string) $v) !== '')
         ->serializeToForum('armory.region', 'armory.region', fn ($v) => in_array($v, ['us', 'eu', 'kr', 'tw'], true) ? $v : 'us')
         ->serializeToForum('armory.bnetOnly', 'armory.bnet_only', fn ($v) => (bool) (int) $v),

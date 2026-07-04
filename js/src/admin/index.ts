@@ -63,6 +63,12 @@ export const extend = [
       default: true,
       label: app.translator.trans('ernestdefoe-armory.admin.briefing_pin_label'),
     }))
+    .setting(() => ({
+      setting: 'armory.calendar_sync_enabled',
+      type: 'boolean',
+      label: app.translator.trans('ernestdefoe-armory.admin.calendar_sync_label'),
+      help: app.translator.trans('ernestdefoe-armory.admin.calendar_sync_help'),
+    }))
     // Custom control: checkbox per class with the official Blizzard icon +
     // per-class note. customSetting (NOT setting — that one is invoked at boot
     // expecting a descriptor) defers the call to the page render, where `this`
