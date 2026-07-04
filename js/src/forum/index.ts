@@ -17,6 +17,7 @@ import GuildPage from './components/GuildPage';
 import CraftingPage from './components/CraftingPage';
 import ItemSearchModal from './components/ItemSearchModal';
 import RecruitingWidget from './components/RecruitingWidget';
+import TokenWidget from './components/TokenWidget';
 import { processWowItems } from './wowItems';
 
 app.initializers.add('ernestdefoe-armory', () => {
@@ -62,6 +63,18 @@ app.initializers.add('ernestdefoe-armory', () => {
       { key: 'applyUrl', type: 'text', label: 'ernestdefoe-armory.forum.recruiting.apply_label', default: '' },
     ],
     component: RecruitingWidget,
+  });
+
+  // WoW Token price widget (same queue pattern — inert without Bespoke).
+  ((window as any).BespokeWidgetQueue = (window as any).BespokeWidgetQueue || []).push({
+    type: 'armory-token',
+    label: 'ernestdefoe-armory.forum.token.widget_name',
+    icon: '🪙',
+    zones: ['sidebar', 'above-list', 'below-list', 'footer'],
+    schema: [
+      { key: 'title', type: 'text', label: 'ernestdefoe-armory.forum.token.title_label', default: 'WoW Token' },
+    ],
+    component: TokenWidget,
   });
 
   // Links in the main forum navigation (the index sidebar), where nav links live.

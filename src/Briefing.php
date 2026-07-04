@@ -120,6 +120,8 @@ class Briefing
     {
         $parts = [$this->t('intro')];
 
+        $parts[] = "### 🎁 {$this->t('vault_heading')}\n\n".$this->t('vault_body');
+
         if ($affixes = $this->affixes()) {
             $parts[] = "### 🌀 {$this->t('affixes_heading')}\n\n".$affixes;
         }

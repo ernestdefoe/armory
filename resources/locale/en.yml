@@ -36,6 +36,12 @@ ernestdefoe-armory:
     crafting_search_placeholder: Search a recipe — e.g. Flask, Enchant Weapon, feast…
     crafting_empty: No crafters yet. The directory fills in as members connect Battle.net and their characters sync.
     crafting_no_results: "No guild crafter knows a recipe matching “{query}” yet."
+    token:
+      widget_name: WoW Token
+      title_label: Title
+      gold: gold
+      foot: Battle.net price, sampled every few hours.
+      empty_hint: The token price appears once Battle.net is configured in the Armory settings.
     guild_member_error: Could not load this character from Battle.net. They may need to log in to the game once and try again.
     guild_back_to_roster: Back to the roster
     bnet_only_error: New accounts are created by signing in with Battle.net.
@@ -86,6 +92,8 @@ ernestdefoe-armory:
   briefing:
     title: "⚔️ This Week in the Pact — {date}"
     intro: "The weekly reset has arrived. Here's everything you need to know this week."
+    vault_heading: "Great Vault"
+    vault_body: "The Vault is open — **collect last week's rewards** before you start this week's runs, and remember: dungeons, raids and delves all fill vault slots."
     affixes_heading: "Mythic+ Affixes"
     dmf_heading: "Darkmoon Faire"
     dmf_open: "**Open now!** The Faire runs through **{date}** — don't forget your monthly profession quests and the carousel buff."
