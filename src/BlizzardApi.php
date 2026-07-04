@@ -129,6 +129,37 @@ class BlizzardApi
     }
 
     /**
+     * The guild's recent activity feed (boss kills, guild achievements).
+     * Profile namespace + client credentials, like the roster.
+     */
+    public function guildActivity(string $region, string $realmSlug, string $guildSlug): ?array
+    {
+        $token = $this->clientToken();
+        if (! $token) {
+            return null;
+        }
+
+        return $this->getJson($this->apiHost($region).'/data/wow/guild/'.rawurlencode($realmSlug).'/'.rawurlencode($guildSlug).'/activity', $token, [
+            'namespace' => "profile-{$region}", 'locale' => 'en_US',
+        ]);
+    }
+
+    /** Current WoW Token price in copper (dynamic namespace), or null. */
+    public function tokenPrice(string $region): ?int
+    {
+        $token = $this->clientToken();
+        if (! $token) {
+            return null;
+        }
+
+        $data = $this->getJson($this->apiHost($region).'/data/wow/token/index', $token, [
+            'namespace' => "dynamic-{$region}", 'locale' => 'en_US',
+        ]);
+
+        return is_numeric($data['price'] ?? null) ? (int) $data['price'] : null;
+    }
+
+    /**
      * The official icon URL for a playable class (static namespace, client
      * credentials — no user link needed). Used by the recruiting widget.
      */

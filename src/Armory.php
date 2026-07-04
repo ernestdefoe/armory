@@ -497,6 +497,72 @@ class Armory
         return $data;
     }
 
+    /**
+     * Boss kills + guild achievements from the configured guild's activity
+     * feed, newest first, limited to the last $days. Same canonical-realm
+     * retry as the roster; cached 30 min. Null when no guild is configured or
+     * the API is unreachable — the briefing degrades gracefully.
+     */
+    public function guildRecentActivity(int $days = 7): ?array
+    {
+        $realm = trim((string) $this->settings->get('armory.guild_realm'));
+        $name = trim((string) $this->settings->get('armory.guild_name'));
+        if ($realm === '' || $name === '') {
+            return null;
+        }
+
+        $region = $this->api->region();
+        $realmSlug = $this->guildSlugify($realm);
+        $guildSlug = $this->guildSlugify($name);
+        $key = "armory.guild_activity.{$region}.{$realmSlug}.{$guildSlug}";
+
+        if ($this->cache && ($hit = $this->cache->get($key)) !== null) {
+            $raw = $hit;
+        } else {
+            $raw = $this->api->guildActivity($region, $realmSlug, $guildSlug);
+            if (! is_array($raw)) {
+                $canonical = $this->canonicalGuildRealm($region, $guildSlug);
+                if ($canonical !== null && $canonical !== $realmSlug) {
+                    $raw = $this->api->guildActivity($region, $canonical, $guildSlug);
+                }
+            }
+            if (is_array($raw)) {
+                $this->cache?->put($key, $raw, 1800);
+            }
+        }
+
+        if (! is_array($raw) || ! is_array($raw['activities'] ?? null)) {
+            return null;
+        }
+
+        $cutoff = (time() - $days * 86400) * 1000; // feed timestamps are ms
+        $out = [];
+        foreach ($raw['activities'] as $a) {
+            $ts = (int) ($a['timestamp'] ?? 0);
+            if ($ts < $cutoff) {
+                continue;
+            }
+            if (isset($a['encounter_completed']['encounter']['name'])) {
+                $out[] = [
+                    'type' => 'kill',
+                    'name' => (string) $a['encounter_completed']['encounter']['name'],
+                    'mode' => (string) ($a['encounter_completed']['mode']['name'] ?? ''),
+                    'timestamp' => (int) ($ts / 1000),
+                ];
+            } elseif (isset($a['character_achievement']['achievement']['name'])) {
+                $out[] = [
+                    'type' => 'achievement',
+                    'name' => (string) $a['character_achievement']['achievement']['name'],
+                    'who' => (string) ($a['character_achievement']['character']['name'] ?? ''),
+                    'timestamp' => (int) ($ts / 1000),
+                ];
+            }
+        }
+        usort($out, fn ($x, $y) => $y['timestamp'] <=> $x['timestamp']);
+
+        return $out;
+    }
+
     /** True when realm+name matches a member of the configured guild's roster. */
     public function isGuildMember(string $realmSlug, string $name): bool
     {

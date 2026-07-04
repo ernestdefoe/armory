@@ -48,3 +48,23 @@ ernestdefoe-armory:
     guild_help: "Set your guild's realm and exact in-game name to enable the guild roster (all members, pulled from Battle.net — no sign-in required)."
     bnet_only_label: Battle.net sign-ups only
     bnet_only_help: "Hide regular registration and require new members to sign up through Battle.net. Admins can still create accounts manually; existing password accounts keep working."
+    briefing_label: Weekly guild briefing
+    briefing_help: "Auto-post a \"This Week\" topic on reset day: this week's Mythic+ affixes, Darkmoon Faire status, guild calendar events, last week's boss kills and the WoW Token price. Needs the scheduler cron; run `php flarum armory:briefing --force` to post one right now."
+    briefing_tag_label: Briefing tag (slug)
+    briefing_tag_help: "The tag new briefings are posted under, e.g. guild-news. Leave blank for no tag."
+    briefing_pin_label: Pin the latest briefing (unpins the previous one)
+
+  briefing:
+    title: "⚔️ This Week in the Pact — {date}"
+    intro: "The weekly reset has arrived. Here's everything you need to know this week."
+    affixes_heading: "Mythic+ Affixes"
+    dmf_heading: "Darkmoon Faire"
+    dmf_open: "**Open now!** The Faire runs through **{date}** — don't forget your monthly profession quests and the carousel buff."
+    dmf_closed: "Closed this week. The Faire returns **{date}**."
+    events_heading: "Guild events this week"
+    activity_heading: "Last week in the guild"
+    activity_kill: "Defeated **{boss}** ({mode}) — {date}"
+    activity_achievement: "**{who}** earned **{name}** — {date}"
+    token_heading: "WoW Token"
+    token_price: "Currently **{gold} gold**."
+    footer: "This briefing is posted automatically each reset. Data: Battle.net, Raider.IO and the guild calendar."

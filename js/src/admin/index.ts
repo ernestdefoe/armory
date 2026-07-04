@@ -45,6 +45,24 @@ export const extend = [
       label: app.translator.trans('ernestdefoe-armory.admin.bnet_only_label'),
       help: app.translator.trans('ernestdefoe-armory.admin.bnet_only_help'),
     }))
+    .setting(() => ({
+      setting: 'armory.briefing_enabled',
+      type: 'boolean',
+      label: app.translator.trans('ernestdefoe-armory.admin.briefing_label'),
+      help: app.translator.trans('ernestdefoe-armory.admin.briefing_help'),
+    }))
+    .setting(() => ({
+      setting: 'armory.briefing_tag_slug',
+      type: 'text',
+      label: app.translator.trans('ernestdefoe-armory.admin.briefing_tag_label'),
+      help: app.translator.trans('ernestdefoe-armory.admin.briefing_tag_help'),
+    }))
+    .setting(() => ({
+      setting: 'armory.briefing_pin',
+      type: 'boolean',
+      default: true,
+      label: app.translator.trans('ernestdefoe-armory.admin.briefing_pin_label'),
+    }))
     // Custom control: checkbox per class with the official Blizzard icon +
     // per-class note. customSetting (NOT setting — that one is invoked at boot
     // expecting a descriptor) defers the call to the page render, where `this`
