@@ -531,13 +531,17 @@ class Armory
             }
         }
 
-        if (! is_array($raw) || ! is_array($raw['activities'] ?? null)) {
-            return null;
+        if (! is_array($raw)) {
+            return null; // unreachable API / unknown guild
         }
+
+        // Blizzard omits the `activities` key entirely when the feed is empty
+        // (verified live) — that's a valid "no recent activity", not an error.
+        $activities = is_array($raw['activities'] ?? null) ? $raw['activities'] : [];
 
         $cutoff = (time() - $days * 86400) * 1000; // feed timestamps are ms
         $out = [];
-        foreach ($raw['activities'] as $a) {
+        foreach ($activities as $a) {
             $ts = (int) ($a['timestamp'] ?? 0);
             if ($ts < $cutoff) {
                 continue;
