@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * A member's linked Battle.net account. `access_token` is stored encrypted at
- * rest (see Armory::encryptToken / decryptToken).
+ * rest (see BattlenetAuth::encrypt / decrypt).
  *
  * @property int         $id
  * @property int         $user_id
