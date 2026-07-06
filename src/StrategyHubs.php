@@ -22,7 +22,7 @@ class StrategyHubs
 
     public function __construct(
         protected SettingsRepositoryInterface $settings,
-        protected Armory $armory,
+        protected GuildLeaderboard $leaderboard,
         protected GuildPoster $poster,
         protected TranslatorInterface $translator,
         protected LoggerInterface $log,
@@ -95,10 +95,14 @@ class StrategyHubs
 
     /** ---- plumbing ------------------------------------------------- */
 
-    /** Progression rows from the armory service; separated so tests can stub it. */
+    /**
+     * Progression rows for the current raid; separated so tests can stub it.
+     * A daily cron, so building on a cold cache here is fine (off the request
+     * path) — the web endpoints only ever read the pre-built cache.
+     */
     protected function progression(): array
     {
-        return $this->armory->guildProgression();
+        return $this->leaderboard->progression() ?? $this->leaderboard->buildProgression();
     }
 
     protected function ledger(): array

@@ -3,12 +3,8 @@
 namespace ErnestDefoe\Armory;
 
 use Carbon\Carbon;
-use Flarum\Api\JsonApi;
-use Flarum\Api\Resource\DiscussionResource;
-use Flarum\Discussion\Discussion;
-use Flarum\Group\Group;
+use ErnestDefoe\Armory\Support\GuildPoster;
 use Flarum\Settings\SettingsRepositoryInterface;
-use Flarum\User\User;
 use GuzzleHttp\Client;
 use Illuminate\Database\ConnectionInterface;
 use Psr\Log\LoggerInterface;
@@ -35,15 +31,19 @@ class Briefing
         'tw' => ['day' => Carbon::WEDNESDAY, 'hour' => 7],
     ];
 
+    /** Reused across affix fetches instead of a fresh TCP stack per invocation. */
+    protected Client $http;
+
     public function __construct(
         protected SettingsRepositoryInterface $settings,
         protected ConnectionInterface $db,
         protected Armory $armory,
         protected BlizzardApi $api,
-        protected JsonApi $jsonApi,
+        protected GuildPoster $poster,
         protected TranslatorInterface $translator,
         protected LoggerInterface $log,
     ) {
+        $this->http = new Client(['timeout' => 8, 'http_errors' => false]);
     }
 
     public function enabled(): bool
@@ -78,40 +78,24 @@ class Briefing
     /** Post the briefing now. Returns the new discussion id, or null on failure. */
     public function post(): ?int
     {
-        $actor = $this->actor();
-        if (! $actor) {
-            $this->log->warning('[armory] briefing: no admin user to post as');
-
-            return null;
-        }
-
         $reset = $this->lastReset();
         $title = $this->t('title', ['date' => $reset->format('F j, Y')]);
         $content = $this->compose($reset);
 
-        try {
-            /** @var Discussion $discussion */
-            $discussion = $this->jsonApi
-                ->forResource(DiscussionResource::class)
-                ->forEndpoint('create')
-                ->process([
-                    'data' => [
-                        'attributes' => ['title' => $title, 'content' => $content],
-                        'relationships' => $this->tagRelationship(),
-                    ],
-                ], [], ['actor' => $actor]);
-        } catch (\Throwable $e) {
-            $this->log->error('[armory] briefing post failed: '.$e->getMessage());
-
+        // Discussion creation (admin actor + tag resolution) is shared with the
+        // other automated posts — delegate to GuildPoster; only the pinning +
+        // last-key bookkeeping below is briefing-specific.
+        $id = $this->poster->post($title, $content, ['armory.briefing_tag_slug']);
+        if ($id === null) {
             return null;
         }
 
-        $this->applyPinning($discussion);
+        $this->applyPinning($id);
 
         $this->settings->set('armory.briefing_last_key', $reset->format('Y-m-d'));
-        $this->settings->set('armory.briefing_last_discussion_id', (string) $discussion->id);
+        $this->settings->set('armory.briefing_last_discussion_id', (string) $id);
 
-        return (int) $discussion->id;
+        return $id;
     }
 
     /** ---- content -------------------------------------------------- */
@@ -149,8 +133,7 @@ class Briefing
     protected function affixes(): ?string
     {
         try {
-            $http = new Client(['timeout' => 8, 'http_errors' => false]);
-            $r = $http->get('https://raider.io/api/v1/mythic-plus/affixes', [
+            $r = $this->http->get('https://raider.io/api/v1/mythic-plus/affixes', [
                 'query' => ['region' => $this->api->region(), 'locale' => 'en'],
             ]);
             $data = json_decode((string) $r->getBody(), true);
@@ -240,19 +223,8 @@ class Briefing
 
     /** ---- plumbing ------------------------------------------------- */
 
-    protected function tagRelationship(): array
-    {
-        $slug = trim((string) $this->settings->get('armory.briefing_tag_slug'));
-        if ($slug === '' || ! $this->db->getSchemaBuilder()->hasTable('tags')) {
-            return [];
-        }
-        $id = $this->db->table('tags')->where('slug', $slug)->value('id');
-
-        return $id ? ['tags' => ['data' => [['type' => 'tags', 'id' => (string) $id]]]] : [];
-    }
-
     /** Pin the new briefing; unpin the previous one. Both are best-effort. */
-    protected function applyPinning(Discussion $discussion): void
+    protected function applyPinning(int $discussionId): void
     {
         if (! $this->settings->get('armory.briefing_pin', true)
             || ! $this->db->getSchemaBuilder()->hasColumn('discussions', 'is_sticky')) {
@@ -264,19 +236,10 @@ class Briefing
             if ($previous) {
                 $this->db->table('discussions')->where('id', $previous)->update(['is_sticky' => false]);
             }
-            $this->db->table('discussions')->where('id', $discussion->id)->update(['is_sticky' => true]);
+            $this->db->table('discussions')->where('id', $discussionId)->update(['is_sticky' => true]);
         } catch (\Throwable $e) {
             // Pinning is cosmetic — never fail the briefing over it.
         }
-    }
-
-    /** A system actor: the first admin (briefings are attributed to them). */
-    protected function actor(): ?User
-    {
-        return User::query()
-            ->whereHas('groups', fn ($q) => $q->where('id', Group::ADMINISTRATOR_ID))
-            ->orderBy('id')
-            ->first();
     }
 
     protected function t(string $key, array $params = []): string

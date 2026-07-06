@@ -4,14 +4,10 @@
  * Armory for Flarum 2 — Battle.net sign-in + WoW character armory.
  */
 
-use ErnestDefoe\Armory\ArmoryBattlenetAccount;
+use ErnestDefoe\Armory\Api\ForumResourceFields;
 use ErnestDefoe\Armory\ArmoryCharacter;
-use ErnestDefoe\Armory\ClassIcons;
 use ErnestDefoe\Armory\Controller;
 use ErnestDefoe\Armory\Listener\RequireBattlenetSignUp;
-use ErnestDefoe\Armory\PlayableClasses;
-use Flarum\Api\Context;
-use Flarum\Settings\SettingsRepositoryInterface;
 use Flarum\Api\Resource\ForumResource;
 use Flarum\Api\Resource\UserResource;
 use Flarum\Api\Schema\Attribute;
@@ -50,7 +46,14 @@ return [
         ->command(ErnestDefoe\Armory\Console\PatchNotesCommand::class)
         ->schedule('armory:patch-notes', fn (Illuminate\Console\Scheduling\Event $e) => $e->everySixHours())
         ->command(ErnestDefoe\Armory\Console\StrategyHubsCommand::class)
-        ->schedule('armory:strategy-hubs', fn (Illuminate\Console\Scheduling\Event $e) => $e->daily()),
+        ->schedule('armory:strategy-hubs', fn (Illuminate\Console\Scheduling\Event $e) => $e->daily())
+        // Pre-build the M+ leaderboard + raid-progression caches off the request
+        // path — the /guild endpoints only read these caches (never block on the
+        // per-character Blizzard fan-out).
+        ->command(ErnestDefoe\Armory\Console\MplusSyncCommand::class)
+        ->schedule('armory:mplus-sync', fn (Illuminate\Console\Scheduling\Event $e) => $e->hourly())
+        ->command(ErnestDefoe\Armory\Console\ProgSyncCommand::class)
+        ->schedule('armory:prog-sync', fn (Illuminate\Console\Scheduling\Event $e) => $e->hourly()),
 
     // Tell the frontend whether Battle.net sign-in is available (so the social
     // login button only shows once an admin has configured the API client).
@@ -104,55 +107,7 @@ return [
     // linked characters but hasn't explicitly confirmed a primary yet — drives
     // the "choose your primary character" onboarding alert.
     (new Extend\ApiResource(ForumResource::class))
-        ->fields(fn () => [
-            Attribute::make('armoryNeedsMain')
-                ->get(function ($forum, Context $context) {
-                    $actor = $context->getActor();
-                    if (! $actor || $actor->isGuest()) {
-                        return false;
-                    }
-                    $acct = ArmoryBattlenetAccount::query()
-                        ->where('user_id', $actor->id)
-                        ->first(['id', 'main_confirmed']);
-                    if ($acct) {
-                        return ! $acct->main_confirmed
-                            && ArmoryCharacter::query()->where('user_id', $actor->id)->exists();
-                    }
-
-                    // Fresh social signup whose link completes lazily on the
-                    // first armory visit — nudge them there.
-                    return $actor->loginProviders()->where('provider', 'battlenet')->exists();
-                }),
-
-            // The guild's "now recruiting" list for the Bespoke widget: parsed
-            // from the admin textarea, each class decorated with its official
-            // Blizzard icon (static media API, cached; null icons when the API
-            // client isn't configured — the widget falls back to colored
-            // crests). Same payload for every visitor.
-            Attribute::make('armoryRecruiting')
-                ->get(function () {
-                    try {
-                        $settings = resolve(SettingsRepositoryInterface::class);
-                        $classes = PlayableClasses::parseRecruiting((string) $settings->get('armory.recruiting'));
-                        if ($classes === []) {
-                            return [];
-                        }
-
-                        // Whole-catalog icon map via the shared service (cached
-                        // a week; never caches a pre-credentials all-null map).
-                        $icons = resolve(ClassIcons::class)->map();
-
-                        return array_map(fn ($c) => [
-                            'slug' => $c['slug'],
-                            'name' => $c['name'],
-                            'note' => $c['note'],
-                            'icon' => $icons[$c['slug']] ?? null,
-                        ], $classes);
-                    } catch (\Throwable $e) {
-                        return [];
-                    }
-                }),
-        ]),
+        ->fields(ForumResourceFields::class),
 
     // The author's main (visible) character on every serialized user, so the
     // post stream can show a character pane beside each post. One indexed

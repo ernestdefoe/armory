@@ -7,6 +7,7 @@ use Flarum\Forum\Auth\Registration;
 use Flarum\Forum\Auth\ResponseFactory;
 use Flarum\Http\RequestUtil;
 use Flarum\User\LoginProvider;
+use Illuminate\Contracts\Cache\Store;
 use Laminas\Diactoros\Response\RedirectResponse;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -18,7 +19,8 @@ class CallbackController implements RequestHandlerInterface
     public function __construct(
         protected Armory $armory,
         protected ResponseFactory $response,
-        protected LoggerInterface $logger
+        protected LoggerInterface $logger,
+        protected Store $cache
     ) {
     }
 
@@ -81,7 +83,7 @@ class CallbackController implements RequestHandlerInterface
             // Brand-new identity: registration completes in a LATER request (the
             // signup modal), when this token is gone. Park it briefly so the
             // first armory visit can finish the link without a second OAuth hop.
-            resolve('cache.store')->put('armory.pending_link.'.$bnetId, [
+            $this->cache->put('armory.pending_link.'.$bnetId, [
                 'token' => $token,
                 'info' => is_array($info) ? $info : [],
             ], 600);
