@@ -99,6 +99,22 @@
 .ar-chip { font-size: 11.5px; background: var(--control-bg); border-radius: 999px; padding: 4px 10px; }
 .ar-empty { padding: 40px 20px; text-align: center; color: var(--muted-color); font-size: 14px; }
 
+/* Great Vault tab — every linked character's weekly progress, stacked. */
+.ar-vaultreset { font-size: 12.5px; color: var(--muted-color); margin-bottom: 12px; b { color: var(--accent, #3fc7eb); font-size: 14px; } }
+.ar-vault { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
+.ar-vaultc { background: var(--control-bg); border: 1px solid var(--control-bg); border-radius: 12px; padding: 12px 14px; }
+.ar-vaulth { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 10px;
+  .nm { font-weight: 800; font-size: 15px; }
+  .il { font-size: 11.5px; color: var(--muted-color); flex: 0 0 auto; } }
+.ar-vrow { display: flex; align-items: center; gap: 9px; margin-top: 8px;
+  .lbl { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted-color); width: 52px; flex: 0 0 auto; } }
+.ar-vslots { display: flex; gap: 5px; flex: 0 0 auto; }
+.ar-vslot { width: 30px; height: 30px; border-radius: 8px; display: flex; align-items: center; justify-content: center;
+  font-size: 11.5px; font-weight: 800; background: var(--body-bg); border: 1px solid var(--control-bg); color: var(--muted-color);
+  &.filled { background: var(--accent, #3fc7eb); border-color: var(--accent, #3fc7eb); color: #10131a; } }
+.ar-vnote { font-size: 11px; color: var(--muted-color); flex: 1; text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ar-vaultnote { margin-top: 14px; font-size: 11px; color: var(--muted-color); line-height: 1.5; opacity: 0.85; }
+
 // [item=…] links inside posts.
 .WowItemLink {
   font-weight: 600;

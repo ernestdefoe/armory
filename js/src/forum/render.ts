@@ -93,3 +93,4 @@ export function achHtml(a: any) {
 }
 
 export const TABS: [string, string][] = [['gear', 'Gear'], ['stats', 'Stats'], ['talents', 'Talents'], ['pve', 'PvE'], ['prof', 'Professions'], ['pvp', 'PvP'], ['reputations', 'Reputations'], ['achievements', 'Achievements']];
+

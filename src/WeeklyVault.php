@@ -86,6 +86,14 @@ class WeeklyVault
         return $out;
     }
 
+    /**
+     * How many characters a single vault view will fetch. Each one costs two
+     * Blizzard calls on a cache miss, and this runs synchronously in the web
+     * request — so it's capped to keep a large roster from timing out. Ordered
+     * by main-then-item-level, the cap keeps the characters that actually matter.
+     */
+    public const MAX_CHARACTERS = 15;
+
     /** Vault progress for every visible character a member has linked. */
     public function forUser(int $userId): array
     {
@@ -94,6 +102,7 @@ class WeeklyVault
             ->where('is_visible', true)
             ->orderByDesc('is_main')
             ->orderByDesc('item_level')
+            ->limit(self::MAX_CHARACTERS)
             ->pluck('id');
 
         $characters = [];

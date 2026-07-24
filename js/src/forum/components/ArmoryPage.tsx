@@ -26,6 +26,10 @@ export default class ArmoryPage extends Page {
   importState: Record<string, string> = {};
   mainConfirmed = true;
   settingMain = false;
+  // Vault is user-scoped (every linked character at once), unlike the other
+  // character-scoped tabs — so it's fetched once and kept across roster clicks.
+  vault: any = null;
+  vaultState = 'idle';
   private eq: any[] = [];
 
   oninit(vnode: any) {
@@ -42,6 +46,9 @@ export default class ArmoryPage extends Page {
     this.error = null;
     this.connectPrompt = false;
     this.D = null;
+    // Roster may have changed (e.g. after a Sync) — re-pull vault on next open.
+    this.vault = null;
+    this.vaultState = 'idle';
 
     const charParam = m.route.param('char');
     if (charParam) {
@@ -108,8 +115,28 @@ export default class ArmoryPage extends Page {
       });
   }
 
+  /** Tab strip. The Vault tab is your-roster-wide, so it only shows on your own sheet. */
+  tabList(): [string, string][] {
+    if (!this.own) return TABS;
+    // Slot Vault right after PvE — it's progression, like M+/raids.
+    return [...TABS.slice(0, 4), ['vault', 'Vault'], ...TABS.slice(4)] as [string, string][];
+  }
+
   setTab(tab: string) {
     this.activeTab = tab;
+    if (tab === 'vault' && this.vaultState === 'idle') {
+      this.vaultState = 'loading';
+      this.req('/armory/vault')
+        .then((r: any) => {
+          this.vault = r;
+          this.vaultState = r && r.ok ? 'done' : 'error';
+          m.redraw();
+        })
+        .catch(() => {
+          this.vaultState = 'error';
+          m.redraw();
+        });
+    }
     if (['pvp', 'reputations', 'achievements'].includes(tab) && this.D && this.D['_' + tab] === undefined) {
       this.D['_' + tab] = 'loading';
       this.req('/armory/extra/' + this.D.character.id + '/' + tab)
@@ -284,12 +311,12 @@ export default class ArmoryPage extends Page {
       <div className="ar-hero" style={`--accent:${accent}`}>
         {this.headerView(c)}
         <div className="ar-tabs">
-          {TABS.map(([id, label]) => (
+          {this.tabList().map(([id, label]) => (
             <button type="button" className={'ar-tab' + (id === this.activeTab ? ' on' : '')} onclick={() => this.setTab(id)}>{label}</button>
           ))}
         </div>
         <div className="ar-tabbody" oncreate={(v: any) => this.wireTips(v.dom)} onupdate={(v: any) => this.wireTips(v.dom)}>
-          {m.trust(this.tabContent())}
+          {this.activeTab === 'vault' ? this.vaultView() : m.trust(this.tabContent())}
         </div>
       </div>
     );
@@ -330,6 +357,90 @@ export default class ArmoryPage extends Page {
         {content}
       </button>
     );
+  }
+
+  /**
+   * The Great Vault tab: every linked character's weekly progress at once.
+   * Rendered as real vnodes (not m.trust) because it fills in asynchronously —
+   * an m.trust body updated from an async redraw doesn't reliably re-diff.
+   */
+  vaultView(): any {
+    if (this.vaultState === 'loading' || this.vaultState === 'idle') {
+      return <div className="ar-empty"><LoadingIndicator /></div>;
+    }
+    if (this.vaultState === 'error') {
+      return <div className="ar-empty">Could not load your vault progress.</div>;
+    }
+    const chars = (this.vault && this.vault.characters) || [];
+    return [
+      this.vault && this.vault.secondsUntilReset != null ? (
+        <div className="ar-vaultreset">Weekly reset in <b>{this.countdown(this.vault.secondsUntilReset)}</b></div>
+      ) : null,
+      chars.length === 0 ? (
+        <div className="ar-empty">No characters to show yet. Sync your roster, then check back.</div>
+      ) : (
+        <div className="ar-vault">{chars.map((row: any) => this.vaultCard(row))}</div>
+      ),
+      chars.length > 0 ? (
+        <div className="ar-vaultnote">
+          Mythic+ counts the dungeons Blizzard reports for this week — running a dungeon again may not show here.
+          World and delve slots aren't available from the API.
+        </div>
+      ) : null,
+    ];
+  }
+
+  private vaultCard(row: any): any {
+    const c = row.character || {};
+    const mth = row.mythic || { slots: [] };
+    const rd = row.raid || { slots: [] };
+    const mNote = mth.count + ' dungeon' + (mth.count === 1 ? '' : 's') + (mth.highest ? ' · best +' + mth.highest : '');
+    const rNote = rd.count + ' boss' + (rd.count === 1 ? '' : 'es') + (rd.instance ? ' · ' + rd.instance : '');
+    return (
+      <div className="ar-vaultc">
+        <div className="ar-vaulth">
+          <span className="nm" style={{ color: cc(c.class) }}>{c.name || '?'}</span>
+          <span className="il">{(c.itemLevel || 0) + ' ilvl'}</span>
+        </div>
+        <div className="ar-vrow">
+          <span className="lbl">Mythic+</span>
+          {this.vaultSlots(mth.slots || [], 'mythic')}
+          <span className="ar-vnote">{mNote}</span>
+        </div>
+        <div className="ar-vrow">
+          <span className="lbl">Raid</span>
+          {this.vaultSlots(rd.slots || [], 'raid')}
+          <span className="ar-vnote">{rNote}</span>
+        </div>
+      </div>
+    );
+  }
+
+  private vaultSlots(slots: any[], kind: 'mythic' | 'raid'): any {
+    const DIFF: Record<number, string> = { 1: 'LFR', 2: 'N', 3: 'H', 4: 'M' };
+    return (
+      <div className="ar-vslots">
+        {slots.map((s: any) => {
+          let label = String(s.need);
+          if (s.filled) label = kind === 'mythic' ? (s.unlockedBy != null ? '+' + s.unlockedBy : '✓') : (DIFF[s.unlockedBy] || '✓');
+          return (
+            <span className={'ar-vslot' + (s.filled ? ' filled' : '')} title={s.filled ? 'Reward unlocked' : 'Need ' + s.remaining + ' more'}>
+              {label}
+            </span>
+          );
+        })}
+      </div>
+    );
+  }
+
+  private countdown(secs: number): string {
+    secs = Math.max(0, Math.floor(secs || 0));
+    const d = Math.floor(secs / 86400);
+    const h = Math.floor((secs % 86400) / 3600);
+    const mnt = Math.floor((secs % 3600) / 60);
+    if (d > 0) return d + 'd ' + h + 'h';
+    if (h > 0) return h + 'h ' + mnt + 'm';
+    return mnt + 'm';
   }
 
   tabContent(): string {
