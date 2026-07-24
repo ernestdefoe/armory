@@ -97,6 +97,7 @@ return [
         ->get('/armory/crafting', 'armory.crafting', Controller\CraftingDirectoryController::class)
         ->get('/armory/crafting/search', 'armory.crafting.search', Controller\CraftingSearchController::class)
         ->get('/armory/token', 'armory.token', Controller\TokenController::class)
+        ->get('/armory/vault', 'armory.vault', Controller\VaultController::class)
         ->post('/armory/guild/refresh', 'armory.guild.refresh', Controller\GuildRefreshController::class)
         ->get('/armory/lookup/{realm}/{name}', 'armory.lookup', Controller\LookupController::class)
         ->get('/armory/lookup-extra/{realm}/{name}/{kind}', 'armory.lookup.extra', Controller\LookupExtraController::class)
