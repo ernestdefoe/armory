@@ -100,6 +100,7 @@ return [
         ->get('/armory/vault', 'armory.vault', Controller\VaultController::class)
         ->post('/armory/guild/refresh', 'armory.guild.refresh', Controller\GuildRefreshController::class)
         ->get('/armory/lookup/{realm}/{name}', 'armory.lookup', Controller\LookupController::class)
+        ->get('/armory/search', 'armory.search', Controller\SearchController::class)
         ->get('/armory/lookup-extra/{realm}/{name}/{kind}', 'armory.lookup.extra', Controller\LookupExtraController::class)
         ->post('/armory/sync', 'armory.sync', Controller\SyncController::class)
         ->post('/armory/character/{id}/{action}', 'armory.action', Controller\ActionController::class),

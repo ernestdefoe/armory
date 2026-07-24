@@ -30,6 +30,13 @@ export default class ArmoryPage extends Page {
   // character-scoped tabs — so it's fetched once and kept across roster clicks.
   vault: any = null;
   vaultState = 'idle';
+  // Open character lookup (any realm/region, no Battle.net link needed).
+  searchRegion = 'us';
+  searchRealm = '';
+  searchName = '';
+  searching = false;
+  searchActive = false;
+  searchError: string | null = null;
   private eq: any[] = [];
 
   oninit(vnode: any) {
@@ -122,6 +129,50 @@ export default class ArmoryPage extends Page {
     return [...TABS.slice(0, 4), ['vault', 'Vault'], ...TABS.slice(4)] as [string, string][];
   }
 
+  doSearch(e?: Event) {
+    if (e) e.preventDefault();
+    const realm = this.searchRealm.trim();
+    const name = this.searchName.trim();
+    if (!realm || !name || this.searching) return;
+    this.searching = true;
+    this.searchError = null;
+    m.redraw();
+    const url = `/armory/search?region=${encodeURIComponent(this.searchRegion)}&realm=${encodeURIComponent(realm)}&name=${encodeURIComponent(name)}`;
+    this.req(url)
+      .then((r: any) => {
+        this.searching = false;
+        if (r && r.ok) {
+          // A lookup payload has the same shape as /full, so the existing sheet
+          // renders it. own=false hides Sync / imports / the Vault tab.
+          this.own = false;
+          this.searchActive = true;
+          this.connectPrompt = false;
+          this.error = null;
+          this.activeTab = 'gear';
+          this.D = r;
+        } else if (r && r.reason === 'rate_limited') {
+          this.searchError = 'Too many lookups — please wait a minute and try again.';
+        } else {
+          this.searchError = 'No character found. Check the region, realm and name.';
+        }
+        m.redraw();
+      })
+      .catch((err: any) => {
+        this.searching = false;
+        this.searchError = err && err.status === 429
+          ? 'Too many lookups — please wait a minute and try again.'
+          : 'Could not run that lookup.';
+        m.redraw();
+      });
+  }
+
+  clearSearch() {
+    this.searchActive = false;
+    this.searchError = null;
+    this.D = null;
+    this.boot();
+  }
+
   setTab(tab: string) {
     this.activeTab = tab;
     if (tab === 'vault' && this.vaultState === 'idle') {
@@ -139,7 +190,13 @@ export default class ArmoryPage extends Page {
     }
     if (['pvp', 'reputations', 'achievements'].includes(tab) && this.D && this.D['_' + tab] === undefined) {
       this.D['_' + tab] = 'loading';
-      this.req('/armory/extra/' + this.D.character.id + '/' + tab)
+      const c = this.D.character;
+      // A lookup result has no DB id — fetch its extra tabs via the open search
+      // endpoint (region+realm+name) instead of the by-id one.
+      const url = this.D.lookup
+        ? `/armory/search?region=${encodeURIComponent(c.region)}&realm=${encodeURIComponent(c.realm_slug)}&name=${encodeURIComponent(c.name)}&kind=${tab}`
+        : '/armory/extra/' + c.id + '/' + tab;
+      this.req(url)
         .then((r: any) => {
           this.D['_' + tab] = r && r.ok ? r.data || false : false;
           m.redraw();
@@ -226,18 +283,44 @@ export default class ArmoryPage extends Page {
     return (
       <div className="ArmoryPage">
         <div className="container">
-          {this.own && this.chars.length > 0 && !this.mainConfirmed ? (
+          {this.searchBar()}
+          {this.own && this.chars.length > 0 && !this.mainConfirmed && !this.searchActive ? (
             <div className="ar-pickbanner">
               <i className="fas fa-star" aria-hidden="true" />
               <span>{t('pick_main_banner')}</span>
             </div>
           ) : null}
-          <div className="ar-wrap">
-            <aside className="ar-roster">{this.chars.map((ch) => this.rosterItem(ch))}</aside>
+          <div className={'ar-wrap' + (this.searchActive || !this.own ? ' ar-wrap--full' : '')}>
+            {this.searchActive || !this.own ? null : <aside className="ar-roster">{this.chars.map((ch) => this.rosterItem(ch))}</aside>}
             <section className="ar-detail">{this.detailView()}</section>
           </div>
         </div>
       </div>
+    );
+  }
+
+  /** Open lookup: search any character on any realm/region. Visible to everyone. */
+  searchBar() {
+    const REGIONS: [string, string][] = [['us', 'US'], ['eu', 'EU'], ['kr', 'KR'], ['tw', 'TW']];
+    return (
+      <form className="ar-search" onsubmit={(e: Event) => this.doSearch(e)}>
+        <select className="FormControl ar-search-region" value={this.searchRegion} onchange={(e: any) => { this.searchRegion = e.target.value; }}>
+          {REGIONS.map(([v, l]) => <option value={v}>{l}</option>)}
+        </select>
+        <input className="FormControl ar-search-realm" placeholder="Realm (e.g. Argent Dawn)" value={this.searchRealm}
+          oninput={(e: any) => { this.searchRealm = e.target.value; }} />
+        <input className="FormControl ar-search-name" placeholder="Character name" value={this.searchName}
+          oninput={(e: any) => { this.searchName = e.target.value; }} />
+        <button type="submit" className="Button Button--primary" disabled={this.searching}>
+          {this.searching ? '…' : [<i className="fas fa-search" aria-hidden="true" />, ' Look up']}
+        </button>
+        {this.searchActive && app.session.user ? (
+          <button type="button" className="Button Button--text ar-search-clear" onclick={() => this.clearSearch()}>
+            <i className="fas fa-arrow-left" aria-hidden="true" /> My characters
+          </button>
+        ) : null}
+        {this.searchError ? <div className="ar-search-err">{this.searchError}</div> : null}
+      </form>
     );
   }
 

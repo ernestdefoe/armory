@@ -83,7 +83,35 @@ class CharacterSheet
             return ['ok' => false];
         }
 
-        $r = $this->api->region();
+        return $this->assembleByName($this->api->region(), $realmSlug, $name, 600);
+    }
+
+    /**
+     * Full sheet for ANY character on ANY realm/region — the open armory lookup,
+     * with no membership gate. Character data is public via the client-credentials
+     * token (one token works across regions), so this is safe to expose; the
+     * caller (SearchController) throttles it, and the 30-minute cache keeps
+     * repeat lookups off the Blizzard rate limit.
+     */
+    public function publicLookup(string $region, string $realmSlug, string $name): array
+    {
+        $region = in_array($region, BlizzardApi::REGIONS, true) ? $region : $this->api->region();
+        $realmSlug = $this->guild->slugify($realmSlug);
+        $name = trim($name);
+        if ($realmSlug === '' || $name === '') {
+            return ['ok' => false];
+        }
+
+        return $this->assembleByName($region, $realmSlug, $name, 1800);
+    }
+
+    /**
+     * Assemble the full character payload for a realm+name in a given region and
+     * cache it. Shared by the gated roster lookup and the open public lookup —
+     * the only difference between them is the gate and the cache lifetime.
+     */
+    private function assembleByName(string $r, string $realmSlug, string $name, int $ttl): array
+    {
         $n = mb_strtolower($name);
         $key = 'armory.lookup.'.md5("{$r}|{$realmSlug}|{$n}");
         if ($this->cache && ($hit = $this->cache->get($key))) {
@@ -125,7 +153,7 @@ class CharacterSheet
             'raids' => $this->raidBlock($r, $realmSlug, $n),
             'professions' => $this->profBlock($r, $realmSlug, $n),
         ];
-        $this->cache?->put($key, $data, 600);
+        $this->cache?->put($key, $data, $ttl);
 
         return $data;
     }
@@ -146,13 +174,38 @@ class CharacterSheet
         if ($this->cache && ($hit = $this->cache->get($key))) {
             return $hit;
         }
+        return $this->assembleExtra($r, $realmSlug, $n, $kind, 600);
+    }
+
+    /** Lazy extra tabs for the OPEN lookup — region-parameterized, no gate. */
+    public function publicExtra(string $region, string $realmSlug, string $name, string $kind): array
+    {
+        if (! in_array($kind, ['pvp', 'reputations', 'achievements'], true)) {
+            return ['ok' => false];
+        }
+        $region = in_array($region, BlizzardApi::REGIONS, true) ? $region : $this->api->region();
+        $realmSlug = $this->guild->slugify($realmSlug);
+        $name = trim($name);
+        if ($realmSlug === '' || $name === '') {
+            return ['ok' => false];
+        }
+
+        return $this->assembleExtra($region, $realmSlug, mb_strtolower($name), $kind, 1800);
+    }
+
+    private function assembleExtra(string $r, string $realmSlug, string $n, string $kind, int $ttl): array
+    {
+        $key = 'armory.lookupextra.'.md5("{$r}|{$realmSlug}|{$n}|{$kind}");
+        if ($this->cache && ($hit = $this->cache->get($key))) {
+            return $hit;
+        }
         $data = ['ok' => true, 'data' => match ($kind) {
             'pvp' => $this->pvpBlock($r, $realmSlug, $n),
             'reputations' => $this->repBlock($r, $realmSlug, $n),
             'achievements' => $this->achieveBlock($r, $realmSlug, $n),
             default => null,
         }];
-        $this->cache?->put($key, $data, 600);
+        $this->cache?->put($key, $data, $ttl);
 
         return $data;
     }
