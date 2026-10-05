@@ -114,8 +114,21 @@ class BattlenetAuth
 
         return [
             'mode' => ($data['m'] ?? 'link') === 'login' ? 'login' : 'link',
-            'returnTo' => is_string($data['r'] ?? null) ? $data['r'] : '/',
+            'returnTo' => self::safeReturn($data['r'] ?? '/'),
         ];
+    }
+
+    /**
+     * A same-origin path to send the member back to after sign-in, or '/'.
+     * One leading slash, not followed by another slash or a backslash (browsers
+     * read `/\host` as `//host`), and no backslash or control character anywhere.
+     */
+    public static function safeReturn(mixed $r): string
+    {
+        $ok = is_string($r) && str_starts_with($r, '/') && ! str_starts_with($r, '//')
+            && ! preg_match('/[\\\\\x00-\x1f\x7f]/', $r);
+
+        return $ok ? $r : '/';
     }
 
     public function verifyState(string $state): bool

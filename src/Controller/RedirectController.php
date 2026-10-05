@@ -3,6 +3,7 @@
 namespace ErnestDefoe\Armory\Controller;
 
 use ErnestDefoe\Armory\Armory;
+use ErnestDefoe\Armory\BattlenetAuth;
 use Flarum\Http\RequestUtil;
 use Laminas\Diactoros\Response\RedirectResponse;
 use Psr\Http\Message\ResponseInterface;
@@ -40,6 +41,6 @@ class RedirectController implements RequestHandlerInterface
     /** Only allow same-origin relative return paths. */
     private function safeReturn(mixed $r): string
     {
-        return (is_string($r) && str_starts_with($r, '/') && ! str_starts_with($r, '//')) ? $r : '/';
+        return BattlenetAuth::safeReturn($r);
     }
 }
