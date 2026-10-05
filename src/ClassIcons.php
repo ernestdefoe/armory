@@ -34,6 +34,15 @@ class ClassIcons
                 return $icons;
             }
 
+            // 🚨 A failed fetch is remembered briefly too. This runs while the
+            // forum payload is built, on every page; with credentials wrong or
+            // Blizzard down, an empty map that was never cached meant a token
+            // request and a dozen API calls (12s timeout each) on every page
+            // load. Now that retry happens at most every five minutes.
+            if ($this->cache->get($key.'.miss')) {
+                return array_fill_keys(array_keys(PlayableClasses::ALL), null);
+            }
+
             $icons = [];
             foreach (PlayableClasses::ALL as $slug => [$id, $name]) {
                 $icons[$slug] = $this->api->playableClassIcon($region, $id);
@@ -41,6 +50,8 @@ class ClassIcons
 
             if (array_filter($icons) !== []) {
                 $this->cache->put($key, $icons, 604800);
+            } else {
+                $this->cache->put($key.'.miss', true, 300);
             }
 
             return $icons;

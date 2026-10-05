@@ -93,6 +93,7 @@ return [
         ->get('/armory/user/{id}', 'armory.user', Controller\UserController::class)
         ->get('/armory/extra/{id}/{kind}', 'armory.extra', Controller\ExtraController::class)
         ->get('/armory/item/{id}', 'armory.item', Controller\ItemController::class)
+        ->get('/armory/items', 'armory.items', Controller\ItemsController::class)
         ->get('/armory/item-search', 'armory.item.search', Controller\ItemSearchController::class)
         ->get('/armory/guild', 'armory.guild', Controller\GuildRosterController::class)
         ->get('/armory/guild/mplus', 'armory.guild.mplus', Controller\MplusLeaderboardController::class)
