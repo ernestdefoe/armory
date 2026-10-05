@@ -28,7 +28,10 @@ class CallbackController implements RequestHandlerInterface
     {
         $q = $request->getQueryParams();
         $code = $q['code'] ?? null;
-        $state = $this->armory->readState((string) ($q['state'] ?? ''));
+        $raw = (string) ($q['state'] ?? '');
+        $session = $request->getAttribute('session');
+        $expected = (string) $session?->remove('armory.oauth_state');
+        $state = $expected !== '' && hash_equals($expected, $raw) ? $this->armory->readState($raw) : null;
         if (! $code || ! $state) {
             return new RedirectResponse('/');
         }

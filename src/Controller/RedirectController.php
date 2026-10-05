@@ -28,13 +28,17 @@ class RedirectController implements RequestHandlerInterface
         $mode = $actor->isGuest() ? 'login' : 'link';
         $returnTo = $this->safeReturn($request->getQueryParams()['return'] ?? '/');
         $redirectUri = (string) $request->getUri()->withQuery('')->withFragment('')->withPath('/auth/battlenet/callback');
+        $state = $this->armory->signState($mode, $returnTo);
+        // Bind the state to this browser, so a callback URL started by someone
+        // else cannot link their Battle.net account to the member who opens it.
+        $request->getAttribute('session')?->put('armory.oauth_state', $state);
 
         return new RedirectResponse($api->oauthHost().'/authorize?'.http_build_query([
             'client_id' => $api->clientId(),
             'redirect_uri' => $redirectUri,
             'response_type' => 'code',
             'scope' => 'openid wow.profile',
-            'state' => $this->armory->signState($mode, $returnTo),
+            'state' => $state,
         ]));
     }
 
