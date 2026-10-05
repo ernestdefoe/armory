@@ -17,7 +17,8 @@ export const QUAL: Record<string, string> = {
 export const esc = (s: any) => {
   const d = document.createElement('div');
   d.textContent = s == null ? '' : String(s);
-  return d.innerHTML;
+  // innerHTML escapes & < > only; the result also lands inside attributes.
+  return d.innerHTML.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 };
 
 /** Build the inner HTML for an item tooltip from a normalized item object. */
