@@ -3,13 +3,8 @@
 namespace ErnestDefoe\Armory;
 
 use Carbon\Carbon;
-use Flarum\Api\JsonApi;
-use Flarum\Api\Resource\DiscussionResource;
-use Flarum\Discussion\Discussion;
-use Flarum\Group\Group;
+use ErnestDefoe\Armory\Support\GuildPoster;
 use Flarum\Settings\SettingsRepositoryInterface;
-use Flarum\User\User;
-use Illuminate\Database\ConnectionInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
@@ -38,9 +33,8 @@ class RaidRecap
 
     public function __construct(
         protected SettingsRepositoryInterface $settings,
-        protected ConnectionInterface $db,
         protected WarcraftLogs $wcl,
-        protected JsonApi $jsonApi,
+        protected GuildPoster $poster,
         protected TranslatorInterface $translator,
         protected LoggerInterface $log,
     ) {
@@ -89,38 +83,24 @@ class RaidRecap
         usort($due, fn ($a, $b) => ($a['endTime'] <=> $b['endTime']));
         $report = $due[0];
 
-        $actor = $this->actor();
-        if (! $actor) {
-            $this->log->warning('[armory] raid recap: no admin user to post as');
-
-            return null;
-        }
-
         $ended = Carbon::createFromTimestampMs((float) $report['endTime'], 'UTC');
         $zone = (string) ($report['zone']['name'] ?? $this->t('unknown_zone'));
         $title = $this->t('title', ['zone' => $zone, 'date' => $ended->format('F j, Y')]);
         $content = $this->compose($report, $zone);
 
-        try {
-            /** @var Discussion $discussion */
-            $discussion = $this->jsonApi
-                ->forResource(DiscussionResource::class)
-                ->forEndpoint('create')
-                ->process([
-                    'data' => [
-                        'attributes' => ['title' => $title, 'content' => $content],
-                        'relationships' => $this->tagRelationship(),
-                    ],
-                ], [], ['actor' => $actor]);
-        } catch (\Throwable $e) {
-            $this->log->error('[armory] raid recap post failed: '.$e->getMessage());
-
+        // 🚨 Through GuildPoster, like every other automated post: it decides
+        // WHO posts (the first administrator, never a member) and makes the
+        // permission checks the in-process API skips. A refusal is logged
+        // there, and the report is NOT marked processed, so it posts on the
+        // first run after the operator fixes the cause.
+        $id = $this->poster->post($title, $content, ['armory.recap_tag_slug', 'armory.briefing_tag_slug']);
+        if ($id === null) {
             return null;
         }
 
         $this->remember((string) $report['code']);
 
-        return (int) $discussion->id;
+        return $id;
     }
 
     /** ---- content -------------------------------------------------- */
@@ -236,28 +216,6 @@ class RaidRecap
     {
         $codes = array_slice(array_unique(array_merge($this->ledger(), [$code])), -self::LEDGER_MAX);
         $this->settings->set(self::LEDGER_KEY, implode(',', $codes));
-    }
-
-    protected function tagRelationship(): array
-    {
-        $slug = trim((string) $this->settings->get('armory.recap_tag_slug'));
-        if ($slug === '') {
-            $slug = trim((string) $this->settings->get('armory.briefing_tag_slug'));
-        }
-        if ($slug === '' || ! $this->db->getSchemaBuilder()->hasTable('tags')) {
-            return [];
-        }
-        $id = $this->db->table('tags')->where('slug', $slug)->value('id');
-
-        return $id ? ['tags' => ['data' => [['type' => 'tags', 'id' => (string) $id]]]] : [];
-    }
-
-    protected function actor(): ?User
-    {
-        return User::query()
-            ->whereHas('groups', fn ($q) => $q->where('id', Group::ADMINISTRATOR_ID))
-            ->orderBy('id')
-            ->first();
     }
 
     protected function t(string $key, array $params = []): string

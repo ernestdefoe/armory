@@ -47,6 +47,7 @@ Admin → Armory:
 - **Members sign in once.** Public character data is fetched with an app-level token, so refreshes never ask the member to sign in again. Their own Battle.net token is used once, to find which characters are theirs.
 - **Cached, and off the request path.** Character data is cached so pages stay fast and well under Blizzard's rate limits. The guild leaderboard and progression are built by the scheduler, never while a page waits.
 - **Turning on a news feed doesn't flood the forum.** First-kill news and patch notes start from what is already out there and post only what comes after.
+- **Automatic posts come from your first administrator.** Briefings, recaps, news, patch notes and strategy hubs are posted as the administrator with the lowest user id, never as a member. If the tag a feature is set to post under doesn't exist, or that account may not start discussions there, nothing is posted and the reason is written to the forum log; a recap that was skipped posts on the next run after you fix it.
 - **The Great Vault figure for Mythic+ is a floor.** Blizzard reports one best run per dungeon each week, so repeat runs of the same dungeon count once. World and delve slots aren't shown, because Blizzard doesn't expose them.
 - **Needs the scheduler.** Briefings, recaps, news, the leaderboard and calendar events run from `php flarum schedule:run`, which should run from cron every minute. Each has a command to run it by hand, given in its setting's help text.
 - **Theme-aware.** Colours follow your forum's light and dark schemes.
