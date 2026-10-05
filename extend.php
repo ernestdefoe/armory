@@ -5,18 +5,13 @@
  */
 
 use ErnestDefoe\Armory\Api\ForumResourceFields;
-use ErnestDefoe\Armory\ArmoryCharacter;
+use ErnestDefoe\Armory\Api\UserResourceFields;
 use ErnestDefoe\Armory\Controller;
 use ErnestDefoe\Armory\Listener\RequireBattlenetSignUp;
-use Flarum\Api\Endpoint;
-use Flarum\Api\Resource\DiscussionResource;
 use Flarum\Api\Resource\ForumResource;
-use Flarum\Api\Resource\PostResource;
 use Flarum\Api\Resource\UserResource;
-use Flarum\Api\Schema\Attribute;
 use Flarum\Extend;
 use Flarum\User\Event\Saving;
-use Flarum\User\User;
 use s9e\TextFormatter\Configurator;
 
 return [
@@ -117,74 +112,10 @@ return [
     (new Extend\ApiResource(ForumResource::class))
         ->fields(ForumResourceFields::class),
 
-    // The author's main (visible) character on every serialized user, so the
-    // post stream can show a character pane beside each post. One indexed
-    // lookup per distinct author per request (memoized below); only fields the
-    // public armory page already exposes.
-    /*
-     * 🚨 The badge's character is a RELATION, eager-loaded on every endpoint
-     * that serialises users — exactly as core loads `user.groups`.
-     *
-     * The getter used to run its own query per user, so every author on a
-     * discussion list, every poster on a page of posts and every row of the
-     * member list cost one more query. As a relation it is one batched query
-     * per page. Ordering picks the same character the old ->first() did; the
-     * id is a tie-break so two equal characters always resolve the same way.
-     */
-    (new Extend\Model(User::class))
-        ->relationship('armoryMainCharacter', fn (User $user) => $user
-            ->hasOne(ArmoryCharacter::class, 'user_id')
-            ->where('is_visible', true)
-            ->orderByDesc('is_main')
-            ->orderByDesc('item_level')
-            ->orderBy('id')),
-
+    // The author's main character on every serialized user, loaded once per
+    // request for the whole page. See the class.
     (new Extend\ApiResource(UserResource::class))
-        ->endpoint([Endpoint\Index::class, Endpoint\Show::class], fn ($endpoint) => $endpoint
-            ->eagerLoad(['armoryMainCharacter'])),
-
-    (new Extend\ApiResource(PostResource::class))
-        ->endpoint([Endpoint\Index::class, Endpoint\Show::class], fn ($endpoint) => $endpoint
-            ->eagerLoad(['user.armoryMainCharacter'])),
-
-    (new Extend\ApiResource(DiscussionResource::class))
-        ->endpoint(Endpoint\Index::class, fn ($endpoint) => $endpoint
-            ->eagerLoad(['user.armoryMainCharacter', 'lastPostedUser.armoryMainCharacter', 'mostRelevantPost.user.armoryMainCharacter'])),
-
-    (new Extend\ApiResource(UserResource::class))
-        ->fields(function () {
-            // Per-request memo: dedupes the armoryMain lookup across many posts by
-            // the same author in one stream. Safe under Flarum 2's PHP-FPM model
-            // (share-nothing — the container is rebuilt per request, so this
-            // closure and $memo reset each request). If Flarum ever runs under a
-            // persistent worker (Octane/RoadRunner), scope this to the request.
-            $memo = [];
-
-            return [
-                Attribute::make('armoryMain')
-                    ->get(function (User $user) use (&$memo) {
-                        if (! array_key_exists($user->id, $memo)) {
-                            // Eager-loaded with the page (above); a user reached
-                            // any other way still lazy-loads it, once.
-                            $c = $user->armoryMainCharacter;
-                            $memo[$user->id] = $c ? [
-                                'name' => $c->name,
-                                'realm' => $c->realm_slug,
-                                'level' => $c->level,
-                                'class' => $c->class,
-                                'race' => $c->race,
-                                'spec' => $c->spec,
-                                'itemLevel' => $c->item_level,
-                                'guild' => $c->guild,
-                                'avatarUrl' => $c->avatar_url,
-                                'renderUrl' => $c->render_url,
-                            ] : null;
-                        }
-
-                        return $memo[$user->id];
-                    }),
-            ];
-        }),
+        ->fields(UserResourceFields::class),
 
     // Parse [item=12345] in posts into a WoW item link (enhanced client-side
     // with the item name, quality color, icon, and a hover tooltip).
