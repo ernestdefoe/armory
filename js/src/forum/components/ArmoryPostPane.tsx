@@ -2,7 +2,7 @@ import app from 'flarum/forum/app';
 import Component from 'flarum/common/Component';
 import Link from 'flarum/common/components/Link';
 import type Mithril from 'mithril';
-import { cc } from '../render';
+import { cc } from '../../common/classCatalog';
 
 export interface ArmoryMain {
   name: string;

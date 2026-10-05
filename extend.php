@@ -22,6 +22,9 @@ use s9e\TextFormatter\Configurator;
 return [
     (new Extend\Frontend('forum'))
         ->js(__DIR__ . '/js/dist/forum.js')
+        // The code-split pages (ArmoryPage, GuildPage, CraftingPage, the item
+        // search modal). Without this they 404 and the pages never open.
+        ->jsDirectory(__DIR__ . '/js/dist/forum')
         ->css(__DIR__ . '/less/forum.less')
         ->route('/armory', 'armory')
         ->route('/guild', 'armory.guildpage')
@@ -70,7 +73,6 @@ return [
         ->default('armory.patchnotes_enabled', false)
         ->default('armory.strategy_enabled', false)
         ->serializeToForum('armory.configured', 'armory.client_id', fn ($v) => trim((string) $v) !== '')
-        ->serializeToForum('armory.region', 'armory.region', fn ($v) => in_array($v, ['us', 'eu', 'kr', 'tw'], true) ? $v : 'us')
         ->serializeToForum('armory.bnetOnly', 'armory.bnet_only', fn ($v) => (bool) (int) $v),
 
     // Server-side gate for "Battle.net only" registrations (the hidden Sign Up

@@ -1,3 +1,4 @@
 const config = require('flarum-webpack-config');
+const { extension } = require('./chunkIds.cjs');
 
-module.exports = config();
+module.exports = extension(config());

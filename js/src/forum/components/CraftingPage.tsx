@@ -2,7 +2,7 @@ import app from 'flarum/forum/app';
 import Page from 'flarum/common/components/Page';
 import LoadingIndicator from 'flarum/common/components/LoadingIndicator';
 import Link from 'flarum/common/components/Link';
-import { cc } from '../render';
+import { cc } from '../../common/classCatalog';
 
 /**
  * /crafting — the guild crafting directory. A profession overview (who has

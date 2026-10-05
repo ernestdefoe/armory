@@ -4,7 +4,7 @@ import Link from 'flarum/common/components/Link';
 import Tooltip from 'flarum/common/components/Tooltip';
 import humanTime from 'flarum/common/helpers/humanTime';
 import type Mithril from 'mithril';
-import { cc } from '../render';
+import { cc } from '../../common/classCatalog';
 
 /**
  * Drop-in replacement for the discussion list's author avatar: the author's

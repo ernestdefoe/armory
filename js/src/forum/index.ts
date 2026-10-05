@@ -10,21 +10,19 @@ import CommentPost from 'flarum/forum/components/CommentPost';
 import DiscussionListItem from 'flarum/forum/components/DiscussionListItem';
 import TextEditor from 'flarum/common/components/TextEditor';
 import Button from 'flarum/common/components/Button';
-import ArmoryPage from './components/ArmoryPage';
 import ArmoryListAvatar from './components/ArmoryListAvatar';
 import ArmoryPostPane from './components/ArmoryPostPane';
-import GuildPage from './components/GuildPage';
-import CraftingPage from './components/CraftingPage';
-import ItemSearchModal from './components/ItemSearchModal';
 import RecruitingWidget from './components/RecruitingWidget';
 import TokenWidget from './components/TokenWidget';
 import { processWowItems } from './wowItems';
 
 app.initializers.add('ernestdefoe-armory', () => {
-  app.routes['armory'] = { path: '/armory', component: ArmoryPage };
-  app.routes['armory.guildpage'] = { path: '/guild', component: GuildPage };
-  app.routes['armory.guildpage.member'] = { path: '/guild/:realm/:name', component: GuildPage };
-  app.routes['armory.crafting.page'] = { path: '/crafting', component: CraftingPage };
+  // Code-split: each page is its own chunk, fetched the first time someone
+  // opens it, so the character sheet never rides along on every other page.
+  app.routes['armory'] = { path: '/armory', component: () => import('./components/ArmoryPage') };
+  app.routes['armory.guildpage'] = { path: '/guild', component: () => import('./components/GuildPage') };
+  app.routes['armory.guildpage.member'] = { path: '/guild/:realm/:name', component: () => import('./components/GuildPage') };
+  app.routes['armory.crafting.page'] = { path: '/crafting', component: () => import('./components/CraftingPage') };
 
   // Blizzard's render CDN occasionally 500s on freshly released item/character
   // media (cross-origin failures also surface as a "CORS" console error). Swap
@@ -203,7 +201,7 @@ app.initializers.add('ernestdefoe-armory', () => {
         title: trans('item_link_button'),
         onclick: () => {
           const editor = this.attrs.composer?.editor;
-          app.modal.show(ItemSearchModal, { onpick: (tag: string) => editor?.insertAtCursor(tag) });
+          app.modal.show(() => import('./components/ItemSearchModal'), { onpick: (tag: string) => editor?.insertAtCursor(tag) });
         },
       })
     );

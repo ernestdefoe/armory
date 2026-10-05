@@ -1,7 +1,7 @@
 import app from 'flarum/forum/app';
 import Component from 'flarum/common/Component';
 
-import { cc } from '../render';
+import { cc } from '../../common/classCatalog';
 
 /**
  * "Now Recruiting" widget for Bespoke (registered via window.BespokeWidgetQueue
