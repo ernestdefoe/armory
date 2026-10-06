@@ -74,6 +74,11 @@ php flarum migrate
 php flarum cache:clear
 ```
 
+## Support
+
+- **Support forum:** [Armory on ernestdefoe.online](https://ernestdefoe.online/d/71)
+- **Bug reports:** [GitHub issues](https://github.com/ernestdefoe/armory/issues)
+
 ## Licence
 
 [MIT](LICENSE) © ernestdefoe
