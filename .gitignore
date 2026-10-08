@@ -4,3 +4,5 @@
 .DS_Store
 *.log
 composer.lock
+.phpunit.result.cache
+/tests/integration/tmp
