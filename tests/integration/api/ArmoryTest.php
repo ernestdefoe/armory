@@ -197,7 +197,6 @@ class ArmoryTest extends TestCase
         [$status, $body] = $this->json('GET', '/api/armory/search', null, ['region' => 'us', 'realm' => 'area-52', 'name' => 'x']);
         $this->assertSame(429, $status);
         $this->assertSame('rate_limited', $body['reason']);
-
     }
 
     #[Test]
