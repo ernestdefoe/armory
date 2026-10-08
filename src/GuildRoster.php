@@ -184,7 +184,11 @@ class GuildRoster
     private function canonicalGuildRealm(string $region, string $guildSlug): ?string
     {
         $key = "armory.guild_canonical_realm.{$region}.{$guildSlug}";
-        if ($this->cache && ($hit = $this->cache->get($key))) {
+        // 🚨 Compared with null, not tested for truth: '' is the cached "no
+        // realm found", and a truth test skipped it, asking Blizzard again
+        // on every roster build instead of once a day.
+        $hit = $this->cache?->get($key);
+        if ($hit !== null) {
             return $hit === '' ? null : $hit;
         }
 
