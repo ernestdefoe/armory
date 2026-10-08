@@ -75,7 +75,7 @@ class CallbackController implements RequestHandlerInterface
         $existing = LoginProvider::query()->where('provider', 'battlenet')->where('identifier', $bnetId)->first();
         if ($existing) {
             try {
-                $this->armory->storeLink((int) $existing->user_id, $token, is_array($info) ? $info : []);
+                $this->armory->storeLink((int) $existing->user_id, $token, $info);
             } catch (\Throwable $e) {
                 $this->logger->warning('Armory: re-link on social login failed', [
                     'user_id' => (int) $existing->user_id,
@@ -88,7 +88,7 @@ class CallbackController implements RequestHandlerInterface
             // first armory visit can finish the link without a second OAuth hop.
             $this->cache->put('armory.pending_link.'.$bnetId, [
                 'token' => $token,
-                'info' => is_array($info) ? $info : [],
+                'info' => $info,
             ], 600);
         }
 

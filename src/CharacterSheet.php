@@ -62,7 +62,6 @@ class CharacterSheet
             'pvp' => $this->pvpBlock($c->region, $c->realm_slug, $c->name),
             'reputations' => $this->repBlock($c->region, $c->realm_slug, $c->name),
             'achievements' => $this->achieveBlock($c->region, $c->realm_slug, $c->name),
-            default => null,
         }];
         $this->cache?->put($key, $data, 600);
 
@@ -313,7 +312,7 @@ class CharacterSheet
             'primary' => array_values(array_filter([
                 ['Strength', $eff('strength')], ['Agility', $eff('agility')],
                 ['Intellect', $eff('intellect')], ['Stamina', $eff('stamina')],
-            ], fn ($x) => $x[1])),
+            ], fn ($x) => ! empty($x[1]))),
             'secondary' => [
                 ['Crit', ($val('spell_crit') ?? $val('melee_crit') ?? 0).'%'],
                 ['Haste', ($val('spell_haste') ?? $val('melee_haste') ?? 0).'%'],
@@ -324,7 +323,7 @@ class CharacterSheet
                 ['Health', isset($s['health']) ? number_format((int) $s['health']) : null],
                 [$s['power_type']['name'] ?? 'Power', isset($s['power']) ? number_format((int) $s['power']) : null],
                 ['Armor', $armor ? number_format((int) $armor) : null],
-            ], fn ($x) => $x[1])),
+            ], fn ($x) => ! empty($x[1]))),
         ];
     }
 

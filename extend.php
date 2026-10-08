@@ -37,24 +37,24 @@ return [
     // sync tops up upcoming Darkmoon Faire + weekly-reset events daily.
     (new Extend\Console())
         ->command(ErnestDefoe\Armory\Console\BriefingCommand::class)
-        ->schedule('armory:briefing', fn (Illuminate\Console\Scheduling\Event $e) => $e->hourly())
+        ->schedule(ErnestDefoe\Armory\Console\BriefingCommand::class, function (Illuminate\Console\Scheduling\Event $e): void { $e->hourly(); })
         ->command(ErnestDefoe\Armory\Console\CalendarSyncCommand::class)
-        ->schedule('armory:calendar-sync', fn (Illuminate\Console\Scheduling\Event $e) => $e->daily())
+        ->schedule(ErnestDefoe\Armory\Console\CalendarSyncCommand::class, function (Illuminate\Console\Scheduling\Event $e): void { $e->daily(); })
         ->command(ErnestDefoe\Armory\Console\RaidRecapCommand::class)
-        ->schedule('armory:raid-recap', fn (Illuminate\Console\Scheduling\Event $e) => $e->hourly())
+        ->schedule(ErnestDefoe\Armory\Console\RaidRecapCommand::class, function (Illuminate\Console\Scheduling\Event $e): void { $e->hourly(); })
         ->command(ErnestDefoe\Armory\Console\GuildNewsCommand::class)
-        ->schedule('armory:guild-news', fn (Illuminate\Console\Scheduling\Event $e) => $e->hourly())
+        ->schedule(ErnestDefoe\Armory\Console\GuildNewsCommand::class, function (Illuminate\Console\Scheduling\Event $e): void { $e->hourly(); })
         ->command(ErnestDefoe\Armory\Console\PatchNotesCommand::class)
-        ->schedule('armory:patch-notes', fn (Illuminate\Console\Scheduling\Event $e) => $e->everySixHours())
+        ->schedule(ErnestDefoe\Armory\Console\PatchNotesCommand::class, function (Illuminate\Console\Scheduling\Event $e): void { $e->everySixHours(); })
         ->command(ErnestDefoe\Armory\Console\StrategyHubsCommand::class)
-        ->schedule('armory:strategy-hubs', fn (Illuminate\Console\Scheduling\Event $e) => $e->daily())
+        ->schedule(ErnestDefoe\Armory\Console\StrategyHubsCommand::class, function (Illuminate\Console\Scheduling\Event $e): void { $e->daily(); })
         // Pre-build the M+ leaderboard + raid-progression caches off the request
         // path — the /guild endpoints only read these caches (never block on the
         // per-character Blizzard fan-out).
         ->command(ErnestDefoe\Armory\Console\MplusSyncCommand::class)
-        ->schedule('armory:mplus-sync', fn (Illuminate\Console\Scheduling\Event $e) => $e->hourly())
+        ->schedule(ErnestDefoe\Armory\Console\MplusSyncCommand::class, function (Illuminate\Console\Scheduling\Event $e): void { $e->hourly(); })
         ->command(ErnestDefoe\Armory\Console\ProgSyncCommand::class)
-        ->schedule('armory:prog-sync', fn (Illuminate\Console\Scheduling\Event $e) => $e->hourly()),
+        ->schedule(ErnestDefoe\Armory\Console\ProgSyncCommand::class, function (Illuminate\Console\Scheduling\Event $e): void { $e->hourly(); }),
 
     // Tell the frontend whether Battle.net sign-in is available (so the social
     // login button only shows once an admin has configured the API client).

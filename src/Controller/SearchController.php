@@ -70,7 +70,7 @@ class SearchController implements RequestHandlerInterface
 
         $who = $isMember ? 'u'.$actorId : 'ip'.$this->clientIp($request);
         $key = 'armory.search.rl.'.$who;
-        $count = (int) $this->cache->get($key, 0);
+        $count = (int) $this->cache->get($key);
         $limit = $isMember ? self::LIMIT_MEMBER : self::LIMIT_GUEST;
 
         if ($count >= $limit) {

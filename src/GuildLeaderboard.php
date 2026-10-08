@@ -95,7 +95,7 @@ class GuildLeaderboard
                 'spec' => (string) ($ch->spec ?? ''),
                 'realm' => (string) $ch->realm_slug,
                 'userId' => (int) $ch->user_id,
-                'username' => (string) $ch->username,
+                'username' => (string) $ch->getAttribute('username'),
                 'avatarUrl' => $ch->avatar_url ? (string) $ch->avatar_url : null,
                 'rating' => $rating,
             ];

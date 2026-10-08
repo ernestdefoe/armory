@@ -4,6 +4,7 @@ namespace ErnestDefoe\Armory;
 
 use Flarum\Settings\SettingsRepositoryInterface;
 use GuzzleHttp\Client;
+use Psr\Http\Message\ResponseInterface;
 use Illuminate\Contracts\Cache\Store;
 
 /**
@@ -388,7 +389,7 @@ class BlizzardApi
         }
     }
 
-    private function body($response): ?array
+    private function body(?ResponseInterface $response): ?array
     {
         if (! $response) {
             return null;

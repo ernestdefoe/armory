@@ -4,6 +4,7 @@ namespace ErnestDefoe\Armory\Support;
 
 use Flarum\Api\JsonApi;
 use Flarum\Api\Resource\DiscussionResource;
+use Flarum\Database\AbstractModel;
 use Flarum\Discussion\Discussion;
 use Flarum\Group\Group;
 use Flarum\Settings\SettingsRepositoryInterface;
@@ -108,14 +109,14 @@ class GuildPoster
      * The checks `process()` skips, made here: may this account start a
      * discussion at all, and in this tag. Null when it may.
      */
-    protected function refusal(User $actor, $tag): ?string
+    protected function refusal(User $actor, ?AbstractModel $tag): ?string
     {
         if (! $actor->isAdmin()) {
             return 'is not an administrator';
         }
 
         if ($tag && $actor->cannot('startDiscussion', $tag)) {
-            return "may not start discussions in tag '{$tag->slug}'";
+            return "may not start discussions in tag '{$tag->getAttribute('slug')}'";
         }
 
         if (! $tag && $actor->cannot('startDiscussion')) {

@@ -3,6 +3,7 @@
 namespace ErnestDefoe\Armory;
 
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Builder;
 
 /**
  * Character sync (list an account's characters + enrich each with detail/media
@@ -131,7 +132,8 @@ class CharacterSync
         return $this->charactersQuery($userId)->where('is_visible', true)->get()->map->toArray()->all();
     }
 
-    private function charactersQuery(int $userId)
+    /** @return Builder<ArmoryCharacter> */
+    private function charactersQuery(int $userId): Builder
     {
         return ArmoryCharacter::query()->where('user_id', $userId)
             ->orderByDesc('is_main')->orderByDesc('item_level')->orderByDesc('level');

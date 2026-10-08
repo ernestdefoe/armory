@@ -33,7 +33,7 @@ class ForumResourceFields
             Attribute::make('armoryNeedsMain')
                 ->get(function ($forum, Context $context) {
                     $actor = $context->getActor();
-                    if (! $actor || $actor->isGuest()) {
+                    if ($actor->isGuest()) {
                         return false;
                     }
                     $acct = ArmoryBattlenetAccount::query()
