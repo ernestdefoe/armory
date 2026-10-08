@@ -35,7 +35,11 @@ class ActionController implements RequestHandlerInterface
         $ok = match ($action) {
             'main' => $this->armory->setMain($uid, $id),
             'visible' => $this->armory->setVisible($uid, $id),
-            'disconnect' => (function () use ($uid) { $this->armory->disconnect($uid); return true; })(),
+            'disconnect' => (function () use ($uid) {
+                $this->armory->disconnect($uid);
+
+                return true;
+            })(),
             default => false,
         };
 

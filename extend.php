@@ -16,21 +16,21 @@ use s9e\TextFormatter\Configurator;
 
 return [
     (new Extend\Frontend('forum'))
-        ->js(__DIR__ . '/js/dist/forum.js')
+        ->js(__DIR__.'/js/dist/forum.js')
         // The code-split pages (ArmoryPage, GuildPage, CraftingPage, the item
         // search modal). Without this they 404 and the pages never open.
-        ->jsDirectory(__DIR__ . '/js/dist/forum')
-        ->css(__DIR__ . '/less/forum.less')
+        ->jsDirectory(__DIR__.'/js/dist/forum')
+        ->css(__DIR__.'/less/forum.less')
         ->route('/armory', 'armory')
         ->route('/guild', 'armory.guildpage')
         ->route('/guild/{realm}/{name}', 'armory.guildpage.member')
         ->route('/crafting', 'armory.crafting.page'),
 
     (new Extend\Frontend('admin'))
-        ->js(__DIR__ . '/js/dist/admin.js')
-        ->css(__DIR__ . '/less/admin.less'),
+        ->js(__DIR__.'/js/dist/admin.js')
+        ->css(__DIR__.'/less/admin.less'),
 
-    new Extend\Locales(__DIR__ . '/resources/locale'),
+    new Extend\Locales(__DIR__.'/resources/locale'),
 
     // Weekly "This Week in the Pact" briefing: the scheduler checks hourly and
     // posts on the first tick after the regional weekly reset. The calendar

@@ -9,7 +9,7 @@ use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 
 /**
- * Several item cards in one request: GET /api/armory/items?ids=1,2,3
+ * Several item cards in one request: GET /api/armory/items?ids=1,2,3.
  *
  * 🚨 A post that links twenty items used to fire twenty requests the moment it
  * rendered, each booting Flarum and opening its own database connection —

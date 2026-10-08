@@ -13,19 +13,19 @@ class PlayableClasses
 {
     /** slug => [Blizzard playable-class id, display name] */
     public const ALL = [
-        'warrior'     => [1, 'Warrior'],
-        'paladin'     => [2, 'Paladin'],
-        'hunter'      => [3, 'Hunter'],
-        'rogue'       => [4, 'Rogue'],
-        'priest'      => [5, 'Priest'],
+        'warrior' => [1, 'Warrior'],
+        'paladin' => [2, 'Paladin'],
+        'hunter' => [3, 'Hunter'],
+        'rogue' => [4, 'Rogue'],
+        'priest' => [5, 'Priest'],
         'deathknight' => [6, 'Death Knight'],
-        'shaman'      => [7, 'Shaman'],
-        'mage'        => [8, 'Mage'],
-        'warlock'     => [9, 'Warlock'],
-        'monk'        => [10, 'Monk'],
-        'druid'       => [11, 'Druid'],
+        'shaman' => [7, 'Shaman'],
+        'mage' => [8, 'Mage'],
+        'warlock' => [9, 'Warlock'],
+        'monk' => [10, 'Monk'],
+        'druid' => [11, 'Druid'],
         'demonhunter' => [12, 'Demon Hunter'],
-        'evoker'      => [13, 'Evoker'],
+        'evoker' => [13, 'Evoker'],
     ];
 
     /** Normalize any reasonable spelling to a catalog slug ('' when unknown). */
@@ -59,7 +59,7 @@ class PlayableClasses
             [$id, $name] = self::ALL[$slug];
             $out[$slug] = [
                 'slug' => $slug,
-                'id'   => $id,
+                'id' => $id,
                 'name' => $name,
                 'note' => mb_substr(trim($note), 0, 120),
             ];

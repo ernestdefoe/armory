@@ -13,7 +13,7 @@ use Flarum\User\User;
  *   - {@see CharacterSheet}   the armory page tabs + item card + by-name lookups
  *   - {@see GuildRoster}      guild roster + activity feed + membership gate
  *   - {@see RoleplayImporter} ernestdefoe/roleplay import
- *   - {@see ArenaImporter}    forumaker/arena import
+ *   - {@see ArenaImporter}    forumaker/arena import.
  */
 class Armory
 {

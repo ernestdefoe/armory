@@ -4,8 +4,8 @@ namespace ErnestDefoe\Armory;
 
 use Flarum\Settings\SettingsRepositoryInterface;
 use GuzzleHttp\Client;
-use Psr\Http\Message\ResponseInterface;
 use Illuminate\Contracts\Cache\Store;
+use Psr\Http\Message\ResponseInterface;
 
 /**
  * Dependency-free client for Battle.net OAuth + the Blizzard WoW API (Guzzle +
@@ -69,6 +69,7 @@ class BlizzardApi
         if (is_string($cached) && $cached !== '') {
             return $cached;
         }
+
         try {
             $r = $this->http->post($this->oauthHost().'/token', [
                 'auth' => [$this->clientId(), $this->clientSecret()],

@@ -173,6 +173,7 @@ class CharacterSheet
         if ($this->cache && ($hit = $this->cache->get($key))) {
             return $hit;
         }
+
         return $this->assembleExtra($r, $realmSlug, $n, $kind, 600);
     }
 

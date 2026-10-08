@@ -104,7 +104,6 @@ class RaidRecap
     }
 
     /** ---- content -------------------------------------------------- */
-
     public function compose(array $report, string $zone): string
     {
         $start = Carbon::createFromTimestampMs((float) ($report['startTime'] ?? 0), 'UTC');
@@ -206,7 +205,6 @@ class RaidRecap
     }
 
     /** ---- plumbing ------------------------------------------------- */
-
     protected function ledger(): array
     {
         return array_values(array_filter(explode(',', (string) $this->settings->get(self::LEDGER_KEY))));

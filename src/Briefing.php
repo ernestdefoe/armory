@@ -99,7 +99,6 @@ class Briefing
     }
 
     /** ---- content -------------------------------------------------- */
-
     public function compose(Carbon $reset): string
     {
         $parts = [$this->t('intro')];

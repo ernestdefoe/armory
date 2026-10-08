@@ -79,7 +79,6 @@ class StrategyHubs
     }
 
     /** ---- content -------------------------------------------------- */
-
     protected function compose(string $boss, string $raid): string
     {
         $wowhead = 'https://www.wowhead.com/search?q='.rawurlencode($boss);

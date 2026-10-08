@@ -94,7 +94,6 @@ class WarcraftLogs
     }
 
     /** ---- plumbing ------------------------------------------------- */
-
     protected function graphql(string $query, array $variables): ?array
     {
         $token = $this->token();

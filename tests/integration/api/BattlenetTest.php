@@ -2,11 +2,11 @@
 
 namespace ErnestDefoe\Armory\Tests\integration\api;
 
+use ErnestDefoe\Armory\BlizzardApi;
+use ErnestDefoe\Armory\Tests\integration\FakeBattlenet;
 use Flarum\Testing\integration\RetrievesAuthorizedUsers;
 use Flarum\Testing\integration\TestCase;
 use Flarum\User\User;
-use ErnestDefoe\Armory\BlizzardApi;
-use ErnestDefoe\Armory\Tests\integration\FakeBattlenet;
 use PHPUnit\Framework\Attributes\Test;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;

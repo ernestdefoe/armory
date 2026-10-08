@@ -82,7 +82,6 @@ class GuildNews
     }
 
     /** ---- content -------------------------------------------------- */
-
     protected function postKill(array $kill): bool
     {
         $boss = (string) $kill['name'];

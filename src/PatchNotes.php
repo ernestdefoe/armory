@@ -77,7 +77,6 @@ class PatchNotes
     }
 
     /** ---- content -------------------------------------------------- */
-
     protected function post(array $item): bool
     {
         $title = '🛠️ '.$item['title'];

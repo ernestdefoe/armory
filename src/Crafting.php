@@ -116,7 +116,6 @@ class Crafting
     }
 
     /** ---- plumbing ------------------------------------------------- */
-
     protected function chars(): array
     {
         return $this->db->table('armory_characters')

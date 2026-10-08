@@ -27,7 +27,7 @@ class ClassIcons
         try {
             $region = (string) $this->settings->get('armory.region');
             $region = in_array($region, ['us', 'eu', 'kr', 'tw'], true) ? $region : 'us';
-            $key = 'armory.class-icons.' . $region;
+            $key = 'armory.class-icons.'.$region;
 
             $icons = $this->cache->get($key);
             if (is_array($icons)) {
