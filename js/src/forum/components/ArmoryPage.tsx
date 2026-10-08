@@ -159,9 +159,7 @@ export default class ArmoryPage extends Page {
       })
       .catch((err: any) => {
         this.searching = false;
-        this.searchError = err && err.status === 429
-          ? 'Too many lookups — please wait a minute and try again.'
-          : 'Could not run that lookup.';
+        this.searchError = err && err.status === 429 ? 'Too many lookups — please wait a minute and try again.' : 'Could not run that lookup.';
         m.redraw();
       });
   }
@@ -301,16 +299,41 @@ export default class ArmoryPage extends Page {
 
   /** Open lookup: search any character on any realm/region. Visible to everyone. */
   searchBar() {
-    const REGIONS: [string, string][] = [['us', 'US'], ['eu', 'EU'], ['kr', 'KR'], ['tw', 'TW']];
+    const REGIONS: [string, string][] = [
+      ['us', 'US'],
+      ['eu', 'EU'],
+      ['kr', 'KR'],
+      ['tw', 'TW'],
+    ];
     return (
       <form className="ar-search" onsubmit={(e: Event) => this.doSearch(e)}>
-        <select className="FormControl ar-search-region" value={this.searchRegion} onchange={(e: any) => { this.searchRegion = e.target.value; }}>
-          {REGIONS.map(([v, l]) => <option value={v}>{l}</option>)}
+        <select
+          className="FormControl ar-search-region"
+          value={this.searchRegion}
+          onchange={(e: any) => {
+            this.searchRegion = e.target.value;
+          }}
+        >
+          {REGIONS.map(([v, l]) => (
+            <option value={v}>{l}</option>
+          ))}
         </select>
-        <input className="FormControl ar-search-realm" placeholder="Realm (e.g. Argent Dawn)" value={this.searchRealm}
-          oninput={(e: any) => { this.searchRealm = e.target.value; }} />
-        <input className="FormControl ar-search-name" placeholder="Character name" value={this.searchName}
-          oninput={(e: any) => { this.searchName = e.target.value; }} />
+        <input
+          className="FormControl ar-search-realm"
+          placeholder="Realm (e.g. Argent Dawn)"
+          value={this.searchRealm}
+          oninput={(e: any) => {
+            this.searchRealm = e.target.value;
+          }}
+        />
+        <input
+          className="FormControl ar-search-name"
+          placeholder="Character name"
+          value={this.searchName}
+          oninput={(e: any) => {
+            this.searchName = e.target.value;
+          }}
+        />
         <button type="submit" className="Button Button--primary" disabled={this.searching}>
           {this.searching ? '…' : [<i className="fas fa-search" aria-hidden="true" />, ' Look up']}
         </button>
@@ -331,7 +354,9 @@ export default class ArmoryPage extends Page {
       <button type="button" className={'ar-ritem' + (String(ch.id) === String(this.activeId) ? ' active' : '')} onclick={() => this.loadFull(ch.id)}>
         {ch.avatar_url ? <img src={ch.avatar_url} alt="" /> : null}
         <span>
-          <span className="ar-rname" style={{ color: cc(ch.class) }}>{ch.name}</span>
+          <span className="ar-rname" style={{ color: cc(ch.class) }}>
+            {ch.name}
+          </span>
           <br />
           <span className="ar-rmeta">{(ch.item_level || 0) + ' ilvl · ' + (ch.realm_slug || '').replace(/-/g, ' ')}</span>
         </span>
@@ -378,14 +403,35 @@ export default class ArmoryPage extends Page {
             Connect your Battle.net account to load your characters.
             <br />
             <br />
-            <a className="Button Button--primary" href="/auth/battlenet">Sign in with Battle.net</a>
+            <a className="Button Button--primary" href="/auth/battlenet">
+              Sign in with Battle.net
+            </a>
           </div>
         </div>
       );
     }
-    if (this.loading && !this.D) return <div className="ar-hero"><div className="ar-empty"><LoadingIndicator /></div></div>;
-    if (this.error) return <div className="ar-hero"><div className="ar-empty">{this.error}</div></div>;
-    if (!this.D) return <div className="ar-hero"><div className="ar-empty"><LoadingIndicator /></div></div>;
+    if (this.loading && !this.D)
+      return (
+        <div className="ar-hero">
+          <div className="ar-empty">
+            <LoadingIndicator />
+          </div>
+        </div>
+      );
+    if (this.error)
+      return (
+        <div className="ar-hero">
+          <div className="ar-empty">{this.error}</div>
+        </div>
+      );
+    if (!this.D)
+      return (
+        <div className="ar-hero">
+          <div className="ar-empty">
+            <LoadingIndicator />
+          </div>
+        </div>
+      );
 
     const c = this.D.character;
     let accent = cc(c.class);
@@ -395,7 +441,9 @@ export default class ArmoryPage extends Page {
         {this.headerView(c)}
         <div className="ar-tabs">
           {this.tabList().map(([id, label]) => (
-            <button type="button" className={'ar-tab' + (id === this.activeTab ? ' on' : '')} onclick={() => this.setTab(id)}>{label}</button>
+            <button type="button" className={'ar-tab' + (id === this.activeTab ? ' on' : '')} onclick={() => this.setTab(id)}>
+              {label}
+            </button>
           ))}
         </div>
         <div className="ar-tabbody" oncreate={(v: any) => this.wireTips(v.dom)} onupdate={(v: any) => this.wireTips(v.dom)}>
@@ -411,13 +459,18 @@ export default class ArmoryPage extends Page {
     return (
       <div className="ar-head">
         <div>
-          <h1 className="ar-name" style={{ color: cc(c.class) }}>{c.name}</h1>
+          <h1 className="ar-name" style={{ color: cc(c.class) }}>
+            {c.name}
+          </h1>
           <div className="ar-titleline">
             {title}
             {c.faction ? [' · ', <span style={{ color: fc(c.faction) }}>{tz(c.faction)}</span>] : null}
           </div>
         </div>
-        <div className="ar-ilvl"><b>{c.item_level || 0}</b><span>Item level</span></div>
+        <div className="ar-ilvl">
+          <b>{c.item_level || 0}</b>
+          <span>Item level</span>
+        </div>
         {this.own && this.rpOk ? this.importBtn('roleplay', 'fas fa-dice-d20', 'Add to Role-Play', 'Imported') : null}
         {this.own && this.arenaOk ? this.importBtn('arena', 'fas fa-dungeon', 'Add to Arena', 'Deck built') : null}
         {this.own ? (
@@ -449,7 +502,11 @@ export default class ArmoryPage extends Page {
    */
   vaultView(): any {
     if (this.vaultState === 'loading' || this.vaultState === 'idle') {
-      return <div className="ar-empty"><LoadingIndicator /></div>;
+      return (
+        <div className="ar-empty">
+          <LoadingIndicator />
+        </div>
+      );
     }
     if (this.vaultState === 'error') {
       return <div className="ar-empty">Could not load your vault progress.</div>;
@@ -457,7 +514,9 @@ export default class ArmoryPage extends Page {
     const chars = (this.vault && this.vault.characters) || [];
     return [
       this.vault && this.vault.secondsUntilReset != null ? (
-        <div className="ar-vaultreset">Weekly reset in <b>{this.countdown(this.vault.secondsUntilReset)}</b></div>
+        <div className="ar-vaultreset">
+          Weekly reset in <b>{this.countdown(this.vault.secondsUntilReset)}</b>
+        </div>
       ) : null,
       chars.length === 0 ? (
         <div className="ar-empty">No characters to show yet. Sync your roster, then check back.</div>
@@ -466,8 +525,8 @@ export default class ArmoryPage extends Page {
       ),
       chars.length > 0 ? (
         <div className="ar-vaultnote">
-          Mythic+ counts the dungeons Blizzard reports for this week — running a dungeon again may not show here.
-          World and delve slots aren't available from the API.
+          Mythic+ counts the dungeons Blizzard reports for this week — running a dungeon again may not show here. World and delve slots aren't
+          available from the API.
         </div>
       ) : null,
     ];
@@ -482,7 +541,9 @@ export default class ArmoryPage extends Page {
     return (
       <div className="ar-vaultc">
         <div className="ar-vaulth">
-          <span className="nm" style={{ color: cc(c.class) }}>{c.name || '?'}</span>
+          <span className="nm" style={{ color: cc(c.class) }}>
+            {c.name || '?'}
+          </span>
           <span className="il">{(c.itemLevel || 0) + ' ilvl'}</span>
         </div>
         <div className="ar-vrow">
@@ -505,7 +566,7 @@ export default class ArmoryPage extends Page {
       <div className="ar-vslots">
         {slots.map((s: any) => {
           let label = String(s.need);
-          if (s.filled) label = kind === 'mythic' ? (s.unlockedBy != null ? '+' + s.unlockedBy : '✓') : (DIFF[s.unlockedBy] || '✓');
+          if (s.filled) label = kind === 'mythic' ? (s.unlockedBy != null ? '+' + s.unlockedBy : '✓') : DIFF[s.unlockedBy] || '✓';
           return (
             <span className={'ar-vslot' + (s.filled ? ' filled' : '')} title={s.filled ? 'Reward unlocked' : 'Need ' + s.remaining + ' more'}>
               {label}

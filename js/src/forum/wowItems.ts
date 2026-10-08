@@ -77,9 +77,7 @@ export function processWowItems(root: HTMLElement | null | undefined) {
       card = c;
       const q = QUAL[c.quality] || '';
       if (q) el.style.color = q;
-      el.innerHTML =
-        (c.icon ? '<img class="WowItemLink-icon" src="' + esc(c.icon) + '" alt="">' : '') +
-        esc(c.name || 'item #' + id);
+      el.innerHTML = (c.icon ? '<img class="WowItemLink-icon" src="' + esc(c.icon) + '" alt="">' : '') + esc(c.name || 'item #' + id);
     });
   });
 }

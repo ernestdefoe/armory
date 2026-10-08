@@ -53,9 +53,7 @@ export default class RecruitingWidget extends Component<{ settings: Record<strin
     const color = cc(c.name);
     const inner = [
       m('span.ArmoryRecruit-plate', { style: { '--ar-class': color } }, [
-        c.icon
-          ? m('img.ArmoryRecruit-icon', { src: c.icon, alt: c.name, loading: 'lazy' })
-          : m('span.ArmoryRecruit-iconPh', c.name.charAt(0)),
+        c.icon ? m('img.ArmoryRecruit-icon', { src: c.icon, alt: c.name, loading: 'lazy' }) : m('span.ArmoryRecruit-iconPh', c.name.charAt(0)),
       ]),
       m('span.ArmoryRecruit-meta', [
         m('span.ArmoryRecruit-name', { style: { color } }, c.name),

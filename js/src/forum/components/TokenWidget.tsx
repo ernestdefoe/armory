@@ -79,9 +79,7 @@ export default class TokenWidget extends Component<{ settings: Record<string, un
     const span = Math.max(1, max - min);
     const w = 220;
     const h = 44;
-    const pts = values
-      .map((v, i) => `${((i / (values.length - 1)) * w).toFixed(1)},${(h - 4 - ((v - min) / span) * (h - 8)).toFixed(1)}`)
-      .join(' ');
+    const pts = values.map((v, i) => `${((i / (values.length - 1)) * w).toFixed(1)},${(h - 4 - ((v - min) / span) * (h - 8)).toFixed(1)}`).join(' ');
 
     return m(
       'svg.ArmoryToken-spark',

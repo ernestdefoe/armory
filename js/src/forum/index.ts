@@ -69,9 +69,7 @@ app.initializers.add('ernestdefoe-armory', () => {
     label: 'ernestdefoe-armory.forum.token.widget_name',
     icon: '🪙',
     zones: ['sidebar', 'above-list', 'below-list', 'footer'],
-    schema: [
-      { key: 'title', type: 'text', label: 'ernestdefoe-armory.forum.token.title_label', default: 'WoW Token' },
-    ],
+    schema: [{ key: 'title', type: 'text', label: 'ernestdefoe-armory.forum.token.title_label', default: 'WoW Token' }],
     component: TokenWidget,
   });
 
@@ -81,17 +79,9 @@ app.initializers.add('ernestdefoe-armory', () => {
     items.add('armory', LinkButton.component({ icon: 'fab fa-battle-net', href: app.route('armory') }, trans('nav')), -10);
 
     // The guild roster is public data — show the link to everyone.
-    items.add(
-      'guild',
-      LinkButton.component({ icon: 'fas fa-shield-halved', href: app.route('armory.guildpage') }, trans('guild_nav')),
-      -10.5
-    );
+    items.add('guild', LinkButton.component({ icon: 'fas fa-shield-halved', href: app.route('armory.guildpage') }, trans('guild_nav')), -10.5);
 
-    items.add(
-      'crafting',
-      LinkButton.component({ icon: 'fas fa-hammer', href: app.route('armory.crafting.page') }, trans('crafting_nav')),
-      -10.6
-    );
+    items.add('crafting', LinkButton.component({ icon: 'fas fa-hammer', href: app.route('armory.crafting.page') }, trans('crafting_nav')), -10.6);
 
     // An Arena link too, when the Arena extension (forumaker/arena) is installed.
     // Arena's page is per-user (their deck builder), so only for signed-in members.
@@ -139,9 +129,7 @@ app.initializers.add('ernestdefoe-armory', () => {
         {
           type: 'success',
           dismissible: true,
-          controls: [
-            LinkButton.component({ href: app.route('armory'), icon: 'fas fa-star' }, trans('needs_main_cta')),
-          ],
+          controls: [LinkButton.component({ href: app.route('armory'), icon: 'fas fa-star' }, trans('needs_main_cta'))],
         },
         trans('needs_main_alert')
       );

@@ -122,9 +122,7 @@ export default class GuildPage extends Page {
     this.activeTab = tab;
     if (['pvp', 'reputations', 'achievements'].includes(tab) && this.D && this.selected && this.D['_' + tab] === undefined) {
       this.D['_' + tab] = 'loading';
-      this.req(
-        '/armory/lookup-extra/' + encodeURIComponent(this.selected.realm) + '/' + encodeURIComponent(this.selected.name) + '/' + tab
-      )
+      this.req('/armory/lookup-extra/' + encodeURIComponent(this.selected.realm) + '/' + encodeURIComponent(this.selected.name) + '/' + tab)
         .then((r: any) => {
           this.D['_' + tab] = r && r.ok ? r.data || false : false;
           m.redraw();
@@ -183,7 +181,12 @@ export default class GuildPage extends Page {
   }
 
   rosterView() {
-    if (this.loading) return <div className="gp-loading"><LoadingIndicator /></div>;
+    if (this.loading)
+      return (
+        <div className="gp-loading">
+          <LoadingIndicator />
+        </div>
+      );
     if (!this.roster) return <div className="ar-empty">{this.t('guild_unavailable')}</div>;
 
     return [
@@ -209,7 +212,9 @@ export default class GuildPage extends Page {
           return (
             <li>
               <button type="button" className={'ar-guild-row gp-row' + (active ? ' on' : '')} onclick={() => this.loadMember(mb.realm, mb.name)}>
-                <span className="ar-guild-name" style={{ color: cc(mb.class || '') }}>{mb.name}</span>
+                <span className="ar-guild-name" style={{ color: cc(mb.class || '') }}>
+                  {mb.name}
+                </span>
                 <span className="ar-guild-class">{mb.class || ''}</span>
                 <span className="ar-guild-level">{this.t('guild_level_short', { level: mb.level })}</span>
                 <span className={'ar-guild-rank' + (mb.rank === 0 ? ' is-gm' : '')}>
@@ -227,8 +232,20 @@ export default class GuildPage extends Page {
     if (!this.selected) {
       return <div className="ar-hero gp-placeholder">{this.mplusView()}</div>;
     }
-    if (this.detailLoading) return <div className="ar-hero"><div className="ar-empty"><LoadingIndicator /></div></div>;
-    if (this.detailError || !this.D) return <div className="ar-hero"><div className="ar-empty">{this.t('guild_member_error')}</div></div>;
+    if (this.detailLoading)
+      return (
+        <div className="ar-hero">
+          <div className="ar-empty">
+            <LoadingIndicator />
+          </div>
+        </div>
+      );
+    if (this.detailError || !this.D)
+      return (
+        <div className="ar-hero">
+          <div className="ar-empty">{this.t('guild_member_error')}</div>
+        </div>
+      );
 
     const c = this.D.character;
     let accent = cc(c.class);
@@ -237,21 +254,33 @@ export default class GuildPage extends Page {
     return (
       <div className="ar-hero" style={`--accent:${accent}`}>
         <div className="ar-head">
-          <button type="button" className="Button Button--icon gp-back" aria-label={String(this.t('guild_back_to_roster'))} onclick={() => this.clearMember()}>
+          <button
+            type="button"
+            className="Button Button--icon gp-back"
+            aria-label={String(this.t('guild_back_to_roster'))}
+            onclick={() => this.clearMember()}
+          >
             <i className="fas fa-arrow-left" aria-hidden="true" />
           </button>
           <div>
-            <h1 className="ar-name" style={{ color: cc(c.class) }}>{c.name}</h1>
+            <h1 className="ar-name" style={{ color: cc(c.class) }}>
+              {c.name}
+            </h1>
             <div className="ar-titleline">
               {`Level ${c.level || 0} ${c.race || ''} ${c.spec ? c.spec + ' ' : ''}${c.class || ''}${c.guild ? ' · <' + c.guild + '>' : ''} · ${(c.realm_slug || '').replace(/-/g, ' ')} (${(c.region || 'us').toUpperCase()})`}
               {c.faction ? [' · ', <span style={{ color: fc(c.faction) }}>{tz(c.faction)}</span>] : null}
             </div>
           </div>
-          <div className="ar-ilvl"><b>{c.item_level || 0}</b><span>Item level</span></div>
+          <div className="ar-ilvl">
+            <b>{c.item_level || 0}</b>
+            <span>Item level</span>
+          </div>
         </div>
         <div className="ar-tabs">
           {TABS.map(([id, label]) => (
-            <button type="button" className={'ar-tab' + (id === this.activeTab ? ' on' : '')} onclick={() => this.setTab(id)}>{label}</button>
+            <button type="button" className={'ar-tab' + (id === this.activeTab ? ' on' : '')} onclick={() => this.setTab(id)}>
+              {label}
+            </button>
           ))}
         </div>
         <div className="ar-tabbody" oncreate={(v: any) => this.wireTips(v.dom)} onupdate={(v: any) => this.wireTips(v.dom)}>
@@ -262,7 +291,12 @@ export default class GuildPage extends Page {
   }
 
   mplusView() {
-    if (this.boardLoading) return <div className="ar-empty"><LoadingIndicator /></div>;
+    if (this.boardLoading)
+      return (
+        <div className="ar-empty">
+          <LoadingIndicator />
+        </div>
+      );
 
     if (!this.board || !this.board.length) {
       return (
@@ -274,21 +308,14 @@ export default class GuildPage extends Page {
       );
     }
 
-    const climber = this.board.reduce(
-      (best: any, r: any) => ((r.delta || 0) > 0 && (!best || r.delta > best.delta) ? r : best),
-      null
-    );
+    const climber = this.board.reduce((best: any, r: any) => ((r.delta || 0) > 0 && (!best || r.delta > best.delta) ? r : best), null);
 
     return (
       <div className="gp-mplus">
         <h3 className="gp-mplus-title">
           <i className="fas fa-ranking-star" aria-hidden="true" /> {this.t('mplus_title')}
         </h3>
-        {climber ? (
-          <div className="gp-mplus-climber">
-            📈 {this.t('mplus_climber', { name: climber.name, delta: '+' + climber.delta })}
-          </div>
-        ) : null}
+        {climber ? <div className="gp-mplus-climber">📈 {this.t('mplus_climber', { name: climber.name, delta: '+' + climber.delta })}</div> : null}
         <ol className="gp-mplus-list">
           {this.board.map((r: any, i: number) => (
             <li>
@@ -296,7 +323,9 @@ export default class GuildPage extends Page {
                 <span className="gp-mplus-rank">{i + 1}</span>
                 <span className="gp-mplus-char">
                   <b style={{ color: cc(r.class || '') }}>{r.name}</b>
-                  <small>{(r.spec ? r.spec + ' ' : '') + (r.class || '')} · {r.username}</small>
+                  <small>
+                    {(r.spec ? r.spec + ' ' : '') + (r.class || '')} · {r.username}
+                  </small>
                 </span>
                 <span className="gp-mplus-rating">{Math.round(r.rating)}</span>
                 <span className={'gp-mplus-delta' + (r.delta > 0 ? ' up' : r.delta < 0 ? ' down' : '')}>

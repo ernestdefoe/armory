@@ -28,7 +28,8 @@ export function buildTip(it: any): string {
   if (it.ilvlStr) h += '<div class="g">' + esc(it.ilvlStr) + '</div>';
   if (it.nameDesc) h += '<div class="g">' + esc(it.nameDesc) + '</div>';
   if (it.binding) h += '<div class="w">' + esc(it.binding) + '</div>';
-  if (it.invtype || it.type) h += '<div class="rowx"><span class="w">' + esc(it.invtype || '') + '</span><span class="w">' + esc(it.type || '') + '</span></div>';
+  if (it.invtype || it.type)
+    h += '<div class="rowx"><span class="w">' + esc(it.invtype || '') + '</span><span class="w">' + esc(it.type || '') + '</span></div>';
   if (it.armor) h += '<div class="w">' + esc(it.armor) + '</div>';
   (it.wep || []).forEach((s: string) => (h += '<div class="w">' + esc(s) + '</div>'));
   (it.stats || []).forEach((s: string) => (h += '<div class="w">' + esc(s) + '</div>'));
