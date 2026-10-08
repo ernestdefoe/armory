@@ -7,5 +7,5 @@
       "@flarum/core/*": ["../vendor/flarum/core/js/dist-typings/*"]
     }
   },
-  "include": ["src/**/*", "@types/**/*"]
+  "include": ["src/**/*", "@types/**/*", "../vendor/flarum/core/js/dist-typings/@types/**/*"]
 }

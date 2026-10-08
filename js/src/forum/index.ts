@@ -1,6 +1,6 @@
 import app from 'flarum/forum/app';
 import { extend } from 'flarum/common/extend';
-import Application from 'flarum/common/Application';
+import ForumApplication from 'flarum/forum/ForumApplication';
 import LinkButton from 'flarum/common/components/LinkButton';
 import HeaderSecondary from 'flarum/forum/components/HeaderSecondary';
 import IndexSidebar from 'flarum/forum/components/IndexSidebar';
@@ -129,7 +129,7 @@ app.initializers.add('ernestdefoe-armory', () => {
   // Root-level marker so CSS can hide the log-in modal's "Sign Up" footer
   // link, plus the one-time "choose your primary character" onboarding nudge.
   // Attribute reads live in mount — app.forum is not populated during init.
-  extend(Application.prototype, 'mount', function () {
+  extend(ForumApplication.prototype, 'mount', function () {
     if (app.forum.attribute('armory.bnetOnly') && app.forum.attribute('armory.configured')) {
       document.documentElement.classList.add('armory-bnet-only');
     }

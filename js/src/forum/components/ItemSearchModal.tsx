@@ -1,5 +1,5 @@
 import app from 'flarum/forum/app';
-import Modal from 'flarum/common/components/Modal';
+import Modal, { type IInternalModalAttrs } from 'flarum/common/components/Modal';
 import LoadingIndicator from 'flarum/common/components/LoadingIndicator';
 import { QUAL } from '../tooltip';
 
@@ -7,7 +7,11 @@ import { QUAL } from '../tooltip';
  * Composer picker: search WoW items by name and insert an [item=ID] tag.
  * `attrs.onpick(tag: string)` receives the tag to insert at the cursor.
  */
-export default class ItemSearchModal extends Modal {
+interface ItemSearchModalAttrs extends IInternalModalAttrs {
+  onpick: (tag: string) => void;
+}
+
+export default class ItemSearchModal extends Modal<ItemSearchModalAttrs> {
   query = '';
   results: any[] = [];
   loading = false;
