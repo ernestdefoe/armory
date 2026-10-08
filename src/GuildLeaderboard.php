@@ -4,6 +4,7 @@ namespace ErnestDefoe\Armory;
 
 use Carbon\Carbon;
 use Flarum\Settings\SettingsRepositoryInterface;
+use Flarum\User\User;
 use Illuminate\Contracts\Cache\Store;
 
 /**
@@ -67,8 +68,15 @@ class GuildLeaderboard
                 'armory_characters.id', 'armory_characters.user_id', 'armory_characters.name',
                 'armory_characters.realm_slug', 'armory_characters.region',
                 'armory_characters.class', 'armory_characters.spec',
-                'users.username as username', 'users.avatar_url as avatar_url',
+                'users.username as username',
             ]);
+
+        // 🚨 Through the User model: the avatar_url COLUMN holds a bare
+        // filename for an uploaded avatar, and only the model's accessor turns
+        // it into a URL. Read raw, every uploaded avatar was a broken image.
+        $avatars = User::query()->whereIn('id', $chars->pluck('user_id')->unique()->all())
+            ->get(['id', 'avatar_url'])
+            ->mapWithKeys(fn (User $u) => [$u->id => $u->avatar_url]);
 
         $rows = [];
         foreach ($chars as $ch) {
@@ -96,7 +104,7 @@ class GuildLeaderboard
                 'realm' => (string) $ch->realm_slug,
                 'userId' => (int) $ch->user_id,
                 'username' => (string) $ch->getAttribute('username'),
-                'avatarUrl' => $ch->avatar_url ? (string) $ch->avatar_url : null,
+                'avatarUrl' => $avatars[$ch->user_id] ?? null,
                 'rating' => $rating,
             ];
         }
