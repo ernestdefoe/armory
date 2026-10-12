@@ -3,6 +3,7 @@
 namespace ErnestDefoe\Armory\Job;
 
 use ErnestDefoe\Armory\Armory;
+use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Queue\SerializesModels;
 
@@ -13,7 +14,9 @@ use Illuminate\Queue\SerializesModels;
  */
 class SyncCharactersJob implements ShouldQueue
 {
-    use SerializesModels;
+    // Queueable carries $queue, which the queue reads when it pushes the job
+    // (fof/horizon warned "Undefined property ...::$queue" on every push).
+    use Queueable, SerializesModels;
 
     public function __construct(
         public int $userId
