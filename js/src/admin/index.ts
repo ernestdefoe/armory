@@ -24,7 +24,12 @@ export const extend = [
     .setting(() => ({
       setting: 'armory.region',
       type: 'select',
-      options: { us: 'Americas (US)', eu: 'Europe (EU)', kr: 'Korea (KR)', tw: 'Taiwan (TW)' },
+      options: {
+        us: app.translator.trans('ernestdefoe-armory.admin.region_us'),
+        eu: app.translator.trans('ernestdefoe-armory.admin.region_eu'),
+        kr: app.translator.trans('ernestdefoe-armory.admin.region_kr'),
+        tw: app.translator.trans('ernestdefoe-armory.admin.region_tw'),
+      },
       default: 'us',
       label: app.translator.trans('ernestdefoe-armory.admin.region'),
     }))

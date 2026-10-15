@@ -6,6 +6,7 @@ use Carbon\Carbon;
 use Flarum\Extension\ExtensionManager;
 use Illuminate\Database\ConnectionInterface;
 use Illuminate\Support\Str;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
  * Soft integration with ernestdefoe/roleplay: import a WoW character into an
@@ -18,6 +19,7 @@ class RoleplayImporter
         protected ConnectionInterface $db,
         protected ExtensionManager $extensions,
         protected CharacterSheet $sheet,
+        protected TranslatorInterface $translator,
     ) {
     }
 
@@ -43,11 +45,11 @@ class RoleplayImporter
     public function import(int $userId, int $id): array
     {
         if (! $this->installed()) {
-            return ['ok' => false, 'error' => 'Role-Play is not installed on this forum.'];
+            return ['ok' => false, 'error' => $this->translator->trans('ernestdefoe-armory.api.rp_not_installed')];
         }
         $c = ArmoryCharacter::query()->where('id', $id)->where('user_id', $userId)->first();
         if (! $c) {
-            return ['ok' => false, 'error' => 'Character not found.'];
+            return ['ok' => false, 'error' => $this->translator->trans('ernestdefoe-armory.api.character_not_found')];
         }
 
         $stats = $this->sheet->full($id)['stats'] ?? [];

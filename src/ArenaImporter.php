@@ -5,6 +5,7 @@ namespace ErnestDefoe\Armory;
 use Carbon\Carbon;
 use Flarum\Extension\ExtensionManager;
 use Illuminate\Database\ConnectionInterface;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
  * Soft integration with forumaker/arena: import a WoW character into Arena —
@@ -18,6 +19,7 @@ class ArenaImporter
         protected ConnectionInterface $db,
         protected ExtensionManager $extensions,
         protected CharacterSheet $sheet,
+        protected TranslatorInterface $translator,
     ) {
     }
 
@@ -40,11 +42,11 @@ class ArenaImporter
     public function import(int $userId, int $id): array
     {
         if (! $this->installed()) {
-            return ['ok' => false, 'error' => 'Arena is not installed on this forum.'];
+            return ['ok' => false, 'error' => $this->translator->trans('ernestdefoe-armory.api.arena_not_installed')];
         }
         $c = ArmoryCharacter::query()->where('id', $id)->where('user_id', $userId)->first();
         if (! $c) {
-            return ['ok' => false, 'error' => 'Character not found.'];
+            return ['ok' => false, 'error' => $this->translator->trans('ernestdefoe-armory.api.character_not_found')];
         }
 
         $sets = $this->arenaClassCards((string) $c->class);

@@ -3,6 +3,9 @@
  * Used by the Armory character page (equipped items) and by [item=…] post links.
  */
 
+import app from 'flarum/forum/app';
+import extractText from 'flarum/common/utils/extractText';
+
 export const QUAL: Record<string, string> = {
   POOR: '#9d9d9d',
   COMMON: '#cfcfcf',
@@ -51,7 +54,13 @@ export function buildTip(it: any): string {
     if (s.gold) coins.push(s.gold + 'g');
     if (s.silver) coins.push(s.silver + 's');
     if (s.copper) coins.push(s.copper + 'c');
-    if (coins.length) h += '<div class="sp">' + esc(s.header || 'Sell Price:') + ' ' + coins.join(' ') + '</div>';
+    if (coins.length)
+      h +=
+        '<div class="sp">' +
+        esc(s.header || extractText(app.translator.trans('ernestdefoe-armory.forum.sheet.sell_price'))) +
+        ' ' +
+        coins.join(' ') +
+        '</div>';
   }
   return h;
 }

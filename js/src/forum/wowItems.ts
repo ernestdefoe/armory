@@ -5,6 +5,7 @@
  */
 
 import app from 'flarum/forum/app';
+import extractText from 'flarum/common/utils/extractText';
 import { QUAL, esc, buildTip, showTip, positionTip, hideTip } from './tooltip';
 
 const cache: Record<string, Promise<any>> = {};
@@ -77,7 +78,9 @@ export function processWowItems(root: HTMLElement | null | undefined) {
       card = c;
       const q = QUAL[c.quality] || '';
       if (q) el.style.color = q;
-      el.innerHTML = (c.icon ? '<img class="WowItemLink-icon" src="' + esc(c.icon) + '" alt="">' : '') + esc(c.name || 'item #' + id);
+      el.innerHTML =
+        (c.icon ? '<img class="WowItemLink-icon" src="' + esc(c.icon) + '" alt="">' : '') +
+        esc(c.name || extractText(app.translator.trans('ernestdefoe-armory.forum.item_fallback', { id })));
     });
   });
 }

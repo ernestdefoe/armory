@@ -1,8 +1,8 @@
 import app from 'flarum/forum/app';
 import Page from 'flarum/common/components/Page';
 import LoadingIndicator from 'flarum/common/components/LoadingIndicator';
-import { cc, fc, tz, gearHtml, statsHtml, talentsHtml, pveHtml, profHtml, pvpHtml, repHtml, achHtml, TABS } from '../render';
-import { buildTip, showTip, positionTip, hideTip } from '../tooltip';
+import { tr, cc, fc, tz, gearHtml, statsHtml, talentsHtml, pveHtml, profHtml, pvpHtml, repHtml, achHtml, TABS } from '../render';
+import { esc, buildTip, showTip, positionTip, hideTip } from '../tooltip';
 
 /**
  * The /armory character sheet, as a Mithril component: all state lives on the
@@ -65,7 +65,7 @@ export default class ArmoryPage extends Page {
     }
     if (!app.session.user) {
       this.loading = false;
-      this.error = 'Sign in and connect Battle.net to see your characters.';
+      this.error = tr('sign_in_prompt');
       return;
     }
 
@@ -73,7 +73,7 @@ export default class ArmoryPage extends Page {
       .then((s: any) => {
         this.loading = false;
         if (!s || !s.configured) {
-          this.error = 'The Armory is not configured yet.';
+          this.error = tr('not_configured');
         } else if (!s.connected) {
           this.connectPrompt = true;
         } else {
@@ -83,7 +83,7 @@ export default class ArmoryPage extends Page {
           this.mainConfirmed = !!s.main_confirmed;
           this.chars = s.characters || [];
           if (!this.chars.length) {
-            this.error = 'No characters synced yet. Make sure they have logged in recently, then Sync.';
+            this.error = tr('no_characters');
           } else {
             const main = this.chars.filter((c: any) => c.is_main)[0] || this.chars[0];
             this.loadFull(main.id);
@@ -94,7 +94,7 @@ export default class ArmoryPage extends Page {
       })
       .catch(() => {
         this.loading = false;
-        this.error = 'Sign in and connect Battle.net to see your characters.';
+        this.error = tr('sign_in_prompt');
         m.redraw();
       });
   }
@@ -108,7 +108,7 @@ export default class ArmoryPage extends Page {
     this.req('/armory/full/' + id)
       .then((d: any) => {
         this.loading = false;
-        if (!d || !d.ok) this.error = 'Could not load this character.';
+        if (!d || !d.ok) this.error = tr('load_failed');
         else {
           this.error = null;
           this.D = d;
@@ -117,7 +117,7 @@ export default class ArmoryPage extends Page {
       })
       .catch(() => {
         this.loading = false;
-        this.error = 'Could not load this character.';
+        this.error = tr('load_failed');
         m.redraw();
       });
   }
@@ -126,7 +126,7 @@ export default class ArmoryPage extends Page {
   tabList(): [string, string][] {
     if (!this.own) return TABS;
     // Slot Vault right after PvE — it's progression, like M+/raids.
-    return [...TABS.slice(0, 4), ['vault', 'Vault'], ...TABS.slice(4)] as [string, string][];
+    return [...TABS.slice(0, 4), ['vault', 'tab_vault'], ...TABS.slice(4)] as [string, string][];
   }
 
   doSearch(e?: Event) {
@@ -151,15 +151,15 @@ export default class ArmoryPage extends Page {
           this.activeTab = 'gear';
           this.D = r;
         } else if (r && r.reason === 'rate_limited') {
-          this.searchError = 'Too many lookups — please wait a minute and try again.';
+          this.searchError = tr('search_rate_limited');
         } else {
-          this.searchError = 'No character found. Check the region, realm and name.';
+          this.searchError = tr('search_not_found');
         }
         m.redraw();
       })
       .catch((err: any) => {
         this.searching = false;
-        this.searchError = err && err.status === 429 ? 'Too many lookups — please wait a minute and try again.' : 'Could not run that lookup.';
+        this.searchError = err && err.status === 429 ? tr('search_rate_limited') : tr('search_failed');
         m.redraw();
       });
   }
@@ -265,12 +265,12 @@ export default class ArmoryPage extends Page {
     this.req('/armory/character/' + this.D.character.id + '/' + action, 'POST')
       .then((r: any) => {
         this.importState[action] = r && r.ok ? 'done:' + (r.cards || 0) : 'error';
-        if (!(r && r.ok)) window.alert((r && r.error) || 'Import failed.');
+        if (!(r && r.ok)) window.alert((r && r.error) || tr('import_failed'));
         m.redraw();
       })
       .catch(() => {
         this.importState[action] = 'error';
-        window.alert('Import failed.');
+        window.alert(tr('import_failed'));
         m.redraw();
       });
   }
@@ -320,7 +320,7 @@ export default class ArmoryPage extends Page {
         </select>
         <input
           className="FormControl ar-search-realm"
-          placeholder="Realm (e.g. Argent Dawn)"
+          placeholder={tr('search_realm')}
           value={this.searchRealm}
           oninput={(e: any) => {
             this.searchRealm = e.target.value;
@@ -328,18 +328,18 @@ export default class ArmoryPage extends Page {
         />
         <input
           className="FormControl ar-search-name"
-          placeholder="Character name"
+          placeholder={tr('search_name')}
           value={this.searchName}
           oninput={(e: any) => {
             this.searchName = e.target.value;
           }}
         />
         <button type="submit" className="Button Button--primary" disabled={this.searching}>
-          {this.searching ? '…' : [<i className="fas fa-search" aria-hidden="true" />, ' Look up']}
+          {this.searching ? '…' : [<i className="fas fa-search" aria-hidden="true" />, ' ', tr('search_button')]}
         </button>
         {this.searchActive && app.session.user ? (
           <button type="button" className="Button Button--text ar-search-clear" onclick={() => this.clearSearch()}>
-            <i className="fas fa-arrow-left" aria-hidden="true" /> My characters
+            <i className="fas fa-arrow-left" aria-hidden="true" /> {tr('my_characters')}
           </button>
         ) : null}
         {this.searchError ? <div className="ar-search-err">{this.searchError}</div> : null}
@@ -358,7 +358,7 @@ export default class ArmoryPage extends Page {
             {ch.name}
           </span>
           <br />
-          <span className="ar-rmeta">{(ch.item_level || 0) + ' ilvl · ' + (ch.realm_slug || '').replace(/-/g, ' ')}</span>
+          <span className="ar-rmeta">{tr('ilvl_short', { ilvl: ch.item_level || 0 }) + ' · ' + (ch.realm_slug || '').replace(/-/g, ' ')}</span>
         </span>
         {this.own ? (
           <span
@@ -400,11 +400,11 @@ export default class ArmoryPage extends Page {
       return (
         <div className="ar-hero">
           <div className="ar-empty">
-            Connect your Battle.net account to load your characters.
+            {tr('connect_prompt')}
             <br />
             <br />
             <a className="Button Button--primary" href="/auth/battlenet">
-              Sign in with Battle.net
+              {app.translator.trans('ernestdefoe-armory.forum.log_in_with_battlenet')}
             </a>
           </div>
         </div>
@@ -442,7 +442,7 @@ export default class ArmoryPage extends Page {
         <div className="ar-tabs">
           {this.tabList().map(([id, label]) => (
             <button type="button" className={'ar-tab' + (id === this.activeTab ? ' on' : '')} onclick={() => this.setTab(id)}>
-              {label}
+              {tr(label)}
             </button>
           ))}
         </div>
@@ -455,7 +455,7 @@ export default class ArmoryPage extends Page {
 
   headerView(c: any) {
     const guild = c.guild ? ` · <${c.guild}>` : '';
-    const title = `Level ${c.level || 0} ${c.race || ''} ${c.spec ? c.spec + ' ' : ''}${c.class || ''}${guild} · ${(c.realm_slug || '').replace(/-/g, ' ')} (${(c.region || 'us').toUpperCase()})`;
+    const title = `${tr('level', { level: c.level || 0 })} ${c.race || ''} ${c.spec ? c.spec + ' ' : ''}${c.class || ''}${guild} · ${(c.realm_slug || '').replace(/-/g, ' ')} (${(c.region || 'us').toUpperCase()})`;
     return (
       <div className="ar-head">
         <div>
@@ -469,13 +469,13 @@ export default class ArmoryPage extends Page {
         </div>
         <div className="ar-ilvl">
           <b>{c.item_level || 0}</b>
-          <span>Item level</span>
+          <span>{tr('item_level')}</span>
         </div>
-        {this.own && this.rpOk ? this.importBtn('roleplay', 'fas fa-dice-d20', 'Add to Role-Play', 'Imported') : null}
-        {this.own && this.arenaOk ? this.importBtn('arena', 'fas fa-dungeon', 'Add to Arena', 'Deck built') : null}
+        {this.own && this.rpOk ? this.importBtn('roleplay', 'fas fa-dice-d20', tr('add_to_roleplay'), tr('imported')) : null}
+        {this.own && this.arenaOk ? this.importBtn('arena', 'fas fa-dungeon', tr('add_to_arena'), tr('deck_built')) : null}
         {this.own ? (
           <button type="button" className="Button Button--text ar-syncbtn" disabled={this.syncing} onclick={() => this.doSync()}>
-            {this.syncing ? 'Syncing…' : 'Sync'}
+            {this.syncing ? tr('syncing') : tr('sync')}
           </button>
         ) : null}
       </div>
@@ -485,8 +485,9 @@ export default class ArmoryPage extends Page {
   importBtn(action: string, icon: string, label: string, doneVerb: string) {
     const st = this.importState[action];
     let content: any;
-    if (st === 'importing') content = 'Importing…';
-    else if (st && st.startsWith('done:')) content = [<i className="fas fa-check" />, ` ${doneVerb} (${st.slice(5)} cards)`];
+    if (st === 'importing') content = tr('importing');
+    else if (st && st.startsWith('done:'))
+      content = [<i className="fas fa-check" />, ' ' + tr('import_done', { verb: doneVerb, count: Number(st.slice(5)) })];
     else content = [<i className={icon} />, ' ' + label];
     return (
       <button type="button" className="Button Button--primary ar-syncbtn" disabled={st === 'importing'} onclick={() => this.doImport(action)}>
@@ -509,26 +510,21 @@ export default class ArmoryPage extends Page {
       );
     }
     if (this.vaultState === 'error') {
-      return <div className="ar-empty">Could not load your vault progress.</div>;
+      return <div className="ar-empty">{tr('vault_error')}</div>;
     }
     const chars = (this.vault && this.vault.characters) || [];
     return [
       this.vault && this.vault.secondsUntilReset != null ? (
         <div className="ar-vaultreset">
-          Weekly reset in <b>{this.countdown(this.vault.secondsUntilReset)}</b>
+          {app.translator.trans('ernestdefoe-armory.forum.sheet.vault_reset', { time: <b>{this.countdown(this.vault.secondsUntilReset)}</b> })}
         </div>
       ) : null,
       chars.length === 0 ? (
-        <div className="ar-empty">No characters to show yet. Sync your roster, then check back.</div>
+        <div className="ar-empty">{tr('vault_empty')}</div>
       ) : (
         <div className="ar-vault">{chars.map((row: any) => this.vaultCard(row))}</div>
       ),
-      chars.length > 0 ? (
-        <div className="ar-vaultnote">
-          Mythic+ counts the dungeons Blizzard reports for this week — running a dungeon again may not show here. World and delve slots aren't
-          available from the API.
-        </div>
-      ) : null,
+      chars.length > 0 ? <div className="ar-vaultnote">{tr('vault_note')}</div> : null,
     ];
   }
 
@@ -536,23 +532,23 @@ export default class ArmoryPage extends Page {
     const c = row.character || {};
     const mth = row.mythic || { slots: [] };
     const rd = row.raid || { slots: [] };
-    const mNote = mth.count + ' dungeon' + (mth.count === 1 ? '' : 's') + (mth.highest ? ' · best +' + mth.highest : '');
-    const rNote = rd.count + ' boss' + (rd.count === 1 ? '' : 'es') + (rd.instance ? ' · ' + rd.instance : '');
+    const mNote = tr('vault_dungeons', { count: mth.count }) + (mth.highest ? ' · ' + tr('vault_best', { level: mth.highest }) : '');
+    const rNote = tr('vault_bosses', { count: rd.count }) + (rd.instance ? ' · ' + rd.instance : '');
     return (
       <div className="ar-vaultc">
         <div className="ar-vaulth">
           <span className="nm" style={{ color: cc(c.class) }}>
             {c.name || '?'}
           </span>
-          <span className="il">{(c.itemLevel || 0) + ' ilvl'}</span>
+          <span className="il">{tr('ilvl_short', { ilvl: c.itemLevel || 0 })}</span>
         </div>
         <div className="ar-vrow">
-          <span className="lbl">Mythic+</span>
+          <span className="lbl">{tr('vault_mythic')}</span>
           {this.vaultSlots(mth.slots || [], 'mythic')}
           <span className="ar-vnote">{mNote}</span>
         </div>
         <div className="ar-vrow">
-          <span className="lbl">Raid</span>
+          <span className="lbl">{tr('vault_raid')}</span>
           {this.vaultSlots(rd.slots || [], 'raid')}
           <span className="ar-vnote">{rNote}</span>
         </div>
@@ -568,7 +564,10 @@ export default class ArmoryPage extends Page {
           let label = String(s.need);
           if (s.filled) label = kind === 'mythic' ? (s.unlockedBy != null ? '+' + s.unlockedBy : '✓') : DIFF[s.unlockedBy] || '✓';
           return (
-            <span className={'ar-vslot' + (s.filled ? ' filled' : '')} title={s.filled ? 'Reward unlocked' : 'Need ' + s.remaining + ' more'}>
+            <span
+              className={'ar-vslot' + (s.filled ? ' filled' : '')}
+              title={s.filled ? tr('vault_unlocked') : tr('vault_need', { count: s.remaining })}
+            >
               {label}
             </span>
           );
@@ -582,9 +581,9 @@ export default class ArmoryPage extends Page {
     const d = Math.floor(secs / 86400);
     const h = Math.floor((secs % 86400) / 3600);
     const mnt = Math.floor((secs % 3600) / 60);
-    if (d > 0) return d + 'd ' + h + 'h';
-    if (h > 0) return h + 'h ' + mnt + 'm';
-    return mnt + 'm';
+    if (d > 0) return tr('countdown_dh', { d, h });
+    if (h > 0) return tr('countdown_hm', { h, m: mnt });
+    return tr('countdown_m', { m: mnt });
   }
 
   tabContent(): string {
@@ -597,8 +596,8 @@ export default class ArmoryPage extends Page {
     if (tab === 'pve') return pveHtml(D.mythic, D.raids);
     if (tab === 'prof') return profHtml(D.professions);
     const v = D['_' + tab];
-    if (v === undefined || v === 'loading') return '<div class="ar-empty">Loading…</div>';
-    if (!v) return '<div class="ar-empty">No data available.</div>';
+    if (v === undefined || v === 'loading') return '<div class="ar-empty">' + esc(tr('loading')) + '</div>';
+    if (!v) return '<div class="ar-empty">' + esc(tr('no_data_available')) + '</div>';
     if (tab === 'pvp') return pvpHtml(v);
     if (tab === 'reputations') return repHtml(v);
     return achHtml(v);

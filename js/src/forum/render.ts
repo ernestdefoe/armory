@@ -6,7 +6,13 @@
  * static WoW item markup here without hand-converting ~15 builders to vnodes.
  */
 
+import app from 'flarum/forum/app';
+import extractText from 'flarum/common/utils/extractText';
 import { esc, QUAL } from './tooltip';
+
+/** A sheet string from our locale, as plain text (these builders emit HTML strings). */
+export const tr = (key: string, params?: Record<string, unknown>): string =>
+  extractText(app.translator.trans('ernestdefoe-armory.forum.sheet.' + key, params as any));
 
 // Class colors live in the shared catalog now (the admin bundle needs them
 // too); re-exported so every existing `from '../render'` import keeps working.
@@ -15,28 +21,28 @@ export const fc = (f: string) => (/horde/i.test(f || '') ? '#b91c1c' : /alliance
 export const tz = (s: string) => (s ? s.charAt(0) + s.slice(1).toLowerCase() : s);
 
 const LEFT: [string, string[]][] = [
-  ['Head', ['head']],
-  ['Neck', ['neck']],
-  ['Shoulders', ['shoulder']],
-  ['Back', ['back']],
-  ['Chest', ['chest']],
-  ['Shirt', ['shirt']],
-  ['Tabard', ['tabard']],
-  ['Wrist', ['wrist']],
+  ['slot_head', ['head']],
+  ['slot_neck', ['neck']],
+  ['slot_shoulders', ['shoulder']],
+  ['slot_back', ['back']],
+  ['slot_chest', ['chest']],
+  ['slot_shirt', ['shirt']],
+  ['slot_tabard', ['tabard']],
+  ['slot_wrist', ['wrist']],
 ];
 const RIGHT: [string, string[]][] = [
-  ['Hands', ['hands']],
-  ['Waist', ['waist']],
-  ['Legs', ['legs']],
-  ['Feet', ['feet']],
-  ['Ring 1', ['ring 1', 'finger 1']],
-  ['Ring 2', ['ring 2', 'finger 2']],
-  ['Trinket 1', ['trinket 1']],
-  ['Trinket 2', ['trinket 2']],
+  ['slot_hands', ['hands']],
+  ['slot_waist', ['waist']],
+  ['slot_legs', ['legs']],
+  ['slot_feet', ['feet']],
+  ['slot_ring_1', ['ring 1', 'finger 1']],
+  ['slot_ring_2', ['ring 2', 'finger 2']],
+  ['slot_trinket_1', ['trinket 1']],
+  ['slot_trinket_2', ['trinket 2']],
 ];
 const WEPS: [string, string[]][] = [
-  ['Main Hand', ['main hand', 'main-hand']],
-  ['Off Hand', ['off hand', 'off-hand']],
+  ['slot_main_hand', ['main hand', 'main-hand']],
+  ['slot_off_hand', ['off hand', 'off-hand']],
 ];
 
 const findItem = (eq: any[], keys: string[]) =>
@@ -55,7 +61,7 @@ function slotHtml(label: string, it: any, acc: any[]) {
       ? '<img class="ic" src="' + esc(it.icon) + '" style="border-color:' + q + '" alt="">'
       : '<span class="ic" style="border-color:' + q + '"></span>') +
     '<span class="meta"><span class="sl">' +
-    esc(label) +
+    esc(tr(label)) +
     '</span><span class="it" style="color:' +
     q +
     '">' +
@@ -86,43 +92,62 @@ export function gearHtml(c: any, eq: any[], acc: any[]) {
   );
 }
 export function statsHtml(s: any) {
-  if (!s) return '<div class="ar-empty">No stats available.</div>';
-  let h = '<div class="ar-h3">Attributes</div><div class="ar-grid">' + (s.primary || []).map((p: any) => cell(p[0], p[1])).join('') + '</div>';
-  h += '<div class="ar-h3">Secondary</div><div class="ar-grid">' + (s.secondary || []).map((p: any) => cell(p[0], p[1])).join('') + '</div>';
+  if (!s) return '<div class="ar-empty">' + esc(tr('no_stats')) + '</div>';
+  let h =
+    '<div class="ar-h3">' +
+    esc(tr('attributes')) +
+    '</div><div class="ar-grid">' +
+    (s.primary || []).map((p: any) => cell(p[0], p[1])).join('') +
+    '</div>';
+  h +=
+    '<div class="ar-h3">' +
+    esc(tr('secondary')) +
+    '</div><div class="ar-grid">' +
+    (s.secondary || []).map((p: any) => cell(p[0], p[1])).join('') +
+    '</div>';
   if ((s.extra || []).length)
     h +=
-      '<div class="ar-h3">Defenses &amp; resources</div><div class="ar-grid">' +
+      '<div class="ar-h3">' +
+      esc(tr('defenses')) +
+      '</div><div class="ar-grid">' +
       (s.extra || []).map((p: any) => cell(p[0], p[1])).join('') +
       '</div>';
   return h;
 }
 export function talentsHtml(t: any) {
-  if (!t) return '<div class="ar-empty">No talent data.</div>';
+  if (!t) return '<div class="ar-empty">' + esc(tr('no_talents')) + '</div>';
   let h = '';
   if (t.active)
-    h += '<div class="ar-h3">Specialization</div><div style="font-size:15px;font-weight:700;margin-bottom:6px">' + esc(t.active) + '</div>';
-  if (t.code) h += '<div class="ar-h3">Loadout import string</div><div class="ar-code">' + esc(t.code) + '</div>';
+    h +=
+      '<div class="ar-h3">' +
+      esc(tr('specialization')) +
+      '</div><div style="font-size:15px;font-weight:700;margin-bottom:6px">' +
+      esc(t.active) +
+      '</div>';
+  if (t.code) h += '<div class="ar-h3">' + esc(tr('loadout')) + '</div><div class="ar-code">' + esc(t.code) + '</div>';
   if ((t.talents || []).length)
     h +=
-      '<div class="ar-h3">Talents (' +
-      t.talents.length +
-      ')</div><div class="ar-chips">' +
+      '<div class="ar-h3">' +
+      esc(tr('talents_count', { count: t.talents.length })) +
+      '</div><div class="ar-chips">' +
       t.talents.map((x: any) => '<span class="ar-chip">' + esc(x.name) + (x.rank > 1 ? ' ' + x.rank : '') + '</span>').join('') +
       '</div>';
-  return h || '<div class="ar-empty">No talent data.</div>';
+  return h || '<div class="ar-empty">' + esc(tr('no_talents')) + '</div>';
 }
 export function pveHtml(m: any, raids: any) {
   let h = '';
   if (m) {
-    h += '<div class="ar-h3">Mythic+ rating</div><div class="ar-score">' + (m.rating != null ? m.rating : '—') + '</div>';
+    h += '<div class="ar-h3">' + esc(tr('mplus_rating')) + '</div><div class="ar-score">' + (m.rating != null ? m.rating : '—') + '</div>';
     if ((m.runs || []).length)
       h +=
-        '<div class="ar-h3">Best runs this week</div><div class="ar-runs">' +
+        '<div class="ar-h3">' +
+        esc(tr('best_runs')) +
+        '</div><div class="ar-runs">' +
         m.runs.map((r: any) => '<div class="ar-run"><span>' + esc(r.dungeon) + '</span><b>+' + r.level + '</b></div>').join('') +
         '</div>';
   }
   if (raids && (raids.instances || []).length) {
-    h += '<div class="ar-h3">Raids' + (raids.expansion ? ' · ' + esc(raids.expansion) : '') + '</div>';
+    h += '<div class="ar-h3">' + esc(tr('raids')) + (raids.expansion ? ' · ' + esc(raids.expansion) : '') + '</div>';
     h += raids.instances
       .map(
         (i: any) =>
@@ -134,10 +159,10 @@ export function pveHtml(m: any, raids: any) {
       )
       .join('');
   }
-  return h || '<div class="ar-empty">No PvE data.</div>';
+  return h || '<div class="ar-empty">' + esc(tr('no_pve')) + '</div>';
 }
 export function profHtml(p: any) {
-  if (!p || (!(p.primary || []).length && !(p.secondary || []).length)) return '<div class="ar-empty">No professions.</div>';
+  if (!p || (!(p.primary || []).length && !(p.secondary || []).length)) return '<div class="ar-empty">' + esc(tr('no_professions')) + '</div>';
   const block = (list: any[]) =>
     (list || [])
       .map(
@@ -150,16 +175,18 @@ export function profHtml(p: any) {
       )
       .join('');
   let h = '';
-  if ((p.primary || []).length) h += '<div class="ar-h3">Primary</div>' + block(p.primary);
-  if ((p.secondary || []).length) h += '<div class="ar-h3">Secondary</div>' + block(p.secondary);
+  if ((p.primary || []).length) h += '<div class="ar-h3">' + esc(tr('primary')) + '</div>' + block(p.primary);
+  if ((p.secondary || []).length) h += '<div class="ar-h3">' + esc(tr('secondary')) + '</div>' + block(p.secondary);
   return h;
 }
 export function pvpHtml(p: any) {
   let h = '';
-  if (p.honor_level != null) h += '<div class="ar-h3">Honor level</div><div class="ar-score">' + p.honor_level + '</div>';
+  if (p.honor_level != null) h += '<div class="ar-h3">' + esc(tr('honor_level')) + '</div><div class="ar-score">' + p.honor_level + '</div>';
   if ((p.brackets || []).length)
     h +=
-      '<div class="ar-h3">Rated brackets</div><div class="ar-grid">' +
+      '<div class="ar-h3">' +
+      esc(tr('rated_brackets')) +
+      '</div><div class="ar-grid">' +
       p.brackets
         .map(
           (b: any) =>
@@ -167,15 +194,15 @@ export function pvpHtml(p: any) {
             b.rating +
             '</b><span>' +
             esc(b.name) +
-            (b.won != null ? ' · ' + b.won + 'W / ' + b.lost + 'L' : '') +
+            (b.won != null ? ' · ' + esc(tr('won_lost', { won: b.won, lost: b.lost })) : '') +
             '</span></div>'
         )
         .join('') +
       '</div>';
-  return h || '<div class="ar-empty">No PvP data.</div>';
+  return h || '<div class="ar-empty">' + esc(tr('no_pvp')) + '</div>';
 }
 export function repHtml(list: any[]) {
-  if (!list || !list.length) return '<div class="ar-empty">No reputations.</div>';
+  if (!list || !list.length) return '<div class="ar-empty">' + esc(tr('no_reputations')) + '</div>';
   return (
     '<div class="ar-grid">' +
     list
@@ -193,22 +220,23 @@ export function repHtml(list: any[]) {
   );
 }
 export function achHtml(a: any) {
-  if (!a) return '<div class="ar-empty">No data.</div>';
+  if (!a) return '<div class="ar-empty">' + esc(tr('no_data')) + '</div>';
   const cells: string[] = [];
-  if (a.points != null) cells.push(cell('Achievement points', a.points));
-  if (a.count != null) cells.push(cell('Achievements earned', a.count));
-  if (a.mounts != null) cells.push(cell('Mounts', a.mounts));
-  if (a.pets != null) cells.push(cell('Battle pets', a.pets));
-  return cells.length ? '<div class="ar-grid">' + cells.join('') + '</div>' : '<div class="ar-empty">No data.</div>';
+  if (a.points != null) cells.push(cell(tr('ach_points'), a.points));
+  if (a.count != null) cells.push(cell(tr('ach_earned'), a.count));
+  if (a.mounts != null) cells.push(cell(tr('mounts'), a.mounts));
+  if (a.pets != null) cells.push(cell(tr('battle_pets'), a.pets));
+  return cells.length ? '<div class="ar-grid">' + cells.join('') + '</div>' : '<div class="ar-empty">' + esc(tr('no_data')) + '</div>';
 }
 
+// [tab id, sheet locale key] — render the label with tr().
 export const TABS: [string, string][] = [
-  ['gear', 'Gear'],
-  ['stats', 'Stats'],
-  ['talents', 'Talents'],
-  ['pve', 'PvE'],
-  ['prof', 'Professions'],
-  ['pvp', 'PvP'],
-  ['reputations', 'Reputations'],
-  ['achievements', 'Achievements'],
+  ['gear', 'tab_gear'],
+  ['stats', 'tab_stats'],
+  ['talents', 'tab_talents'],
+  ['pve', 'tab_pve'],
+  ['prof', 'tab_prof'],
+  ['pvp', 'tab_pvp'],
+  ['reputations', 'tab_reputations'],
+  ['achievements', 'tab_achievements'],
 ];

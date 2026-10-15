@@ -1,4 +1,5 @@
 import app from 'flarum/forum/app';
+import extractText from 'flarum/common/utils/extractText';
 import { extend } from 'flarum/common/extend';
 import LinkButton from 'flarum/common/components/LinkButton';
 import HeaderSecondary from 'flarum/forum/components/HeaderSecondary';
@@ -55,7 +56,14 @@ app.initializers.add('ernestdefoe-armory', () => {
     icon: '⚔️',
     zones: ['above-list', 'sidebar', 'below-list', 'footer'],
     schema: [
-      { key: 'title', type: 'text', label: 'ernestdefoe-armory.forum.recruiting.title_label', default: 'Now Recruiting' },
+      {
+        key: 'title',
+        type: 'text',
+        label: 'ernestdefoe-armory.forum.recruiting.title_label',
+        get default() {
+          return extractText(trans('recruiting.widget_name'));
+        },
+      },
       { key: 'notes', type: 'toggle', label: 'ernestdefoe-armory.forum.recruiting.notes_label', default: true },
       { key: 'applyUrl', type: 'text', label: 'ernestdefoe-armory.forum.recruiting.apply_label', default: '' },
     ],
@@ -68,7 +76,16 @@ app.initializers.add('ernestdefoe-armory', () => {
     label: 'ernestdefoe-armory.forum.token.widget_name',
     icon: '🪙',
     zones: ['sidebar', 'above-list', 'below-list', 'footer'],
-    schema: [{ key: 'title', type: 'text', label: 'ernestdefoe-armory.forum.token.title_label', default: 'WoW Token' }],
+    schema: [
+      {
+        key: 'title',
+        type: 'text',
+        label: 'ernestdefoe-armory.forum.token.title_label',
+        get default() {
+          return extractText(trans('token.widget_name'));
+        },
+      },
+    ],
     component: TokenWidget,
   });
 

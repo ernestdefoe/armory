@@ -1,8 +1,8 @@
 import app from 'flarum/forum/app';
 import Page from 'flarum/common/components/Page';
 import LoadingIndicator from 'flarum/common/components/LoadingIndicator';
-import { cc, fc, tz, gearHtml, statsHtml, talentsHtml, pveHtml, profHtml, pvpHtml, repHtml, achHtml, TABS } from '../render';
-import { buildTip, showTip, positionTip, hideTip } from '../tooltip';
+import { tr, cc, fc, tz, gearHtml, statsHtml, talentsHtml, pveHtml, profHtml, pvpHtml, repHtml, achHtml, TABS } from '../render';
+import { esc, buildTip, showTip, positionTip, hideTip } from '../tooltip';
 
 /**
  * The standalone /guild page: the full guild roster (every member, straight
@@ -267,19 +267,19 @@ export default class GuildPage extends Page {
               {c.name}
             </h1>
             <div className="ar-titleline">
-              {`Level ${c.level || 0} ${c.race || ''} ${c.spec ? c.spec + ' ' : ''}${c.class || ''}${c.guild ? ' · <' + c.guild + '>' : ''} · ${(c.realm_slug || '').replace(/-/g, ' ')} (${(c.region || 'us').toUpperCase()})`}
+              {`${tr('level', { level: c.level || 0 })} ${c.race || ''} ${c.spec ? c.spec + ' ' : ''}${c.class || ''}${c.guild ? ' · <' + c.guild + '>' : ''} · ${(c.realm_slug || '').replace(/-/g, ' ')} (${(c.region || 'us').toUpperCase()})`}
               {c.faction ? [' · ', <span style={{ color: fc(c.faction) }}>{tz(c.faction)}</span>] : null}
             </div>
           </div>
           <div className="ar-ilvl">
             <b>{c.item_level || 0}</b>
-            <span>Item level</span>
+            <span>{tr('item_level')}</span>
           </div>
         </div>
         <div className="ar-tabs">
           {TABS.map(([id, label]) => (
             <button type="button" className={'ar-tab' + (id === this.activeTab ? ' on' : '')} onclick={() => this.setTab(id)}>
-              {label}
+              {tr(label)}
             </button>
           ))}
         </div>
@@ -357,8 +357,8 @@ export default class GuildPage extends Page {
     if (tab === 'pve') return pveHtml(D.mythic, D.raids);
     if (tab === 'prof') return profHtml(D.professions);
     const v = D['_' + tab];
-    if (v === undefined || v === 'loading') return '<div class="ar-empty">Loading…</div>';
-    if (!v) return '<div class="ar-empty">No data available.</div>';
+    if (v === undefined || v === 'loading') return '<div class="ar-empty">' + esc(tr('loading')) + '</div>';
+    if (!v) return '<div class="ar-empty">' + esc(tr('no_data_available')) + '</div>';
     if (tab === 'pvp') return pvpHtml(v);
     if (tab === 'reputations') return repHtml(v);
     return achHtml(v);

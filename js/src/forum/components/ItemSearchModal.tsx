@@ -54,7 +54,9 @@ export default class ItemSearchModal extends Modal<ItemSearchModalAttrs> {
         {this.results.map((r) => (
           <li>
             <button type="button" className="Button Button--text ItemSearchModal-result" onclick={() => this.pick(r)}>
-              <span style={{ color: QUAL[r.quality] || 'inherit' }}>{r.name || 'item #' + r.id}</span>
+              <span style={{ color: QUAL[r.quality] || 'inherit' }}>
+                {r.name || app.translator.trans('ernestdefoe-armory.forum.item_fallback', { id: r.id })}
+              </span>
               {r.level ? <span className="ItemSearchModal-ilvl">{r.level}</span> : null}
             </button>
           </li>
